@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flow</title>
+<style>
+  @font-face { font-family: "Inter"; src: url("assets/Inter-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: "Inter"; src: url("assets/Inter-latin-ext.woff2") format("woff2"); font-weight: 100 900; font-display: swap;
+    unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif.woff2") format("woff2"); font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF; }
+  @font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-ext.woff2") format("woff2"); font-display: swap;
+    unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20C0, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: "Instrument Serif"; font-style: italic; src: url("assets/InstrumentSerif-italic.woff2") format("woff2"); font-display: swap; }
+
+  :root {
+    --bg: #FFFFFF;
+    --side: #F7F7F5;
+    --hover: #EFEFEC;
+    --fill: #F3F3F1;
+    --line: #EAEAE7;
+    --ink: #141414;
+    --ink-2: #6B6B68;
+    --ink-3: #A5A5A1;
+    --red: #D93025;
+    --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    --ease: cubic-bezier(.2,.8,.2,1);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.5 "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; display: flex; overflow: hidden; user-select: none; letter-spacing: -.005em; }
+  button, input, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
+  button { background: none; border: 0; cursor: pointer; padding: 0; }
+  svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  [hidden] { display: none !important; }
+
+  /* sidebar */
+  aside { width: 224px; flex: none; background: var(--side); border-right: 1px solid var(--line); padding: 20px 12px 16px; display: flex; flex-direction: column; gap: 1px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 22px; }
+  .brand img { width: 26px; height: 26px; }
+  .brand b { font-family: var(--serif); font-weight: 400; font-size: 24px; letter-spacing: -.01em; line-height: 1; }
+  .nav { display: flex; align-items: center; gap: 11px; height: 34px; padding: 0 10px; border-radius: 8px; color: var(--ink-2); width: 100%; text-align: left; font-weight: 500; transition: background .15s, color .15s; }
+  .nav:hover { background: var(--hover); color: var(--ink); }
+  .nav.on { background: var(--hover); color: var(--ink); }
+  .nav .n { margin-left: auto; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .side-foot { margin-top: auto; padding: 0 10px; display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
+  .local { display: inline-flex; align-items: center; gap: 8px; }
+  .local i { width: 6px; height: 6px; border-radius: 50%; background: #3C9A5F; }
+  .keys { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  kbd { font: 500 11.5px/1 "Inter", sans-serif; color: var(--ink); background: #fff; border: 1px solid #DDDDD9; border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; }
+
+  /* content */
+  main { flex: 1; min-width: 0; overflow-y: auto; }
+  main::-webkit-scrollbar { width: 10px; }
+  main::-webkit-scrollbar-thumb { background: #DDDDD9; border-radius: 10px; border: 3px solid #fff; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 48px 80px; }
+  .view { animation: in .3s var(--ease); }
+  @keyframes in { from { opacity: 0; transform: translateY(4px); } }
+
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 44px; letter-spacing: -.015em; line-height: 1.05; margin: 0 0 10px; }
+  h1 em { font-style: italic; color: var(--ink-2); }
+  .lede { color: var(--ink-2); font-size: 14.5px; margin: 0 0 40px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .section { display: flex; align-items: baseline; justify-content: space-between; margin: 44px 0 4px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .section h2 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .06em; }
+  .section .aside { font-size: 12.5px; color: var(--ink-3); }
+
+  .row { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); min-height: 60px; }
+  .row .l { flex: 1; min-width: 0; }
+  .row .l b { display: block; font-weight: 550; font-size: 14px; }
+  .row .l small { display: block; color: var(--ink-2); font-size: 13px; margin-top: 2px; line-height: 1.45; max-width: 460px; }
+  .row.col { flex-wrap: wrap; }
+  .row.col .under { flex-basis: 100%; }
+
+  /* home */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .stat { padding: 20px 0 18px 20px; }
+  .stat:first-child { padding-left: 0; }
+  .stat + .stat { border-left: 1px solid var(--line); }
+  .stat b { display: block; font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .stat span { display: block; margin-top: 8px; color: var(--ink-2); font-size: 12.5px; }
+  .apps { padding-top: 6px; }
+  .appbar { display: grid; grid-template-columns: 120px 1fr 32px; align-items: center; gap: 16px; padding: 9px 0; font-size: 13.5px; }
+  .appbar .track { height: 3px; background: var(--fill); border-radius: 3px; overflow: hidden; }
+  .appbar .track i { display: block; height: 100%; background: var(--ink); border-radius: 3px; transform-origin: left; animation: grow .8s var(--ease) both; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .appbar .c { color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  .search { display: flex; align-items: center; gap: 6px; color: var(--ink-3); }
+  .search svg { width: 15px; height: 15px; }
+  .search input { width: 150px; background: none; border: 0; outline: 0; color: var(--ink); font-size: 13px; }
+  .search input::placeholder { color: var(--ink-3); }
+  .day { font-size: 12.5px; font-weight: 500; color: var(--ink-3); margin: 28px 0 0; }
+  .entry { display: flex; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .entry time { width: 42px; flex: none; color: var(--ink-3); font-size: 12.5px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .entry .body { flex: 1; min-width: 0; }
+  .entry p { margin: -3px -6px; padding: 3px 6px; border-radius: 6px; user-select: text; overflow-wrap: anywhere; white-space: pre-wrap; cursor: text; font-size: 14.5px; line-height: 1.5; transition: background .12s; }
+  .entry p:hover { background: var(--fill); }
+  .entry p.editing { background: #fff; box-shadow: 0 0 0 1.5px var(--ink); outline: 0; }
+  .meta { margin-top: 5px; font-size: 12px; color: var(--ink-3); }
+  .acts { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; align-self: flex-start; margin-top: -4px; }
+  .entry:hover .acts { opacity: 1; }
+  .icon { width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; color: var(--ink-3); transition: background .12s, color .12s; }
+  .icon:hover { background: var(--fill); color: var(--ink); }
+  .icon svg { width: 16px; height: 16px; }
+  .empty { color: var(--ink-2); padding: 36px 0; border-bottom: 1px solid var(--line); }
+  .empty strong { display: block; color: var(--ink); font-family: var(--serif); font-weight: 400; font-size: 24px; margin-bottom: 4px; }
+
+  /* forms */
+  .adder { display: flex; gap: 10px; flex-wrap: wrap; padding: 4px 0 8px; }
+  .field { flex: 1; min-width: 170px; height: 40px; padding: 0 14px; border-radius: 10px; background: #fff; border: 1px solid #DEDEDA; outline: 0; font-size: 14px; transition: border-color .15s; }
+  .field:focus { border-color: var(--ink); }
+  .field::placeholder { color: var(--ink-3); }
+  textarea.field { height: auto; min-height: 80px; padding: 11px 14px; resize: vertical; line-height: 1.45; flex-basis: 100%; }
+  .btn { height: 40px; padding: 0 20px; border-radius: 20px; background: var(--ink); color: #fff; font-weight: 550; font-size: 13.5px; transition: opacity .15s, transform .15s var(--ease); }
+  .btn:hover { opacity: .86; } .btn:active { transform: scale(.98); }
+  .btn:disabled { background: var(--fill); color: var(--ink-3); cursor: default; opacity: 1; }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1px solid #DEDEDA; height: 32px; padding: 0 14px; font-size: 13px; }
+  .link { color: var(--ink); font-size: 13px; font-weight: 500; text-decoration: underline; text-decoration-color: #CFCFCB; text-underline-offset: 3px; }
+  .link:hover { text-decoration-color: var(--ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 16px 0 4px; }
+  .term { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 6px 0 12px; border-radius: 15px; border: 1px solid #E3E3DF; font-size: 13px; background: #fff; transition: border-color .12s; }
+  .term:hover { border-color: #C9C9C4; }
+  .term.you { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .term .x { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; opacity: .35; transition: opacity .12s; }
+  .term:hover .x { opacity: .8; }
+  .term .x svg { width: 11px; height: 11px; stroke-width: 2.2; }
+  .term .tag { font-size: 11px; opacity: .6; margin-left: 2px; }
+  .fix { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .fix .from { color: var(--ink-3); text-decoration: line-through; }
+  .note { font-size: 12px; color: var(--ink-3); }
+  .snip .t { font-weight: 550; }
+  .snip .e { color: var(--ink-2); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
+
+  /* controls */
+  .seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--fill); border-radius: 9px; padding: 2px; flex: none; }
+  .seg button { position: relative; z-index: 1; height: 28px; padding: 0 12px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); border-radius: 7px; white-space: nowrap; transition: color .2s; }
+  .seg button.on { color: var(--ink); }
+  .seg .thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 2px; border-radius: 7px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); transition: transform .3s var(--ease), width .3s var(--ease); }
+  .switch { width: 40px; height: 24px; border-radius: 24px; background: #DCDCD8; position: relative; transition: background .2s; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.18); transition: transform .3s var(--ease); }
+  .switch.on { background: var(--ink); } .switch.on::after { transform: translateX(16px); }
+  select { font-size: 13px; font-weight: 500; background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B6B68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m7 10 5 5 5-5'/></svg>") no-repeat right 9px center / 13px; border: 1px solid #DEDEDA; border-radius: 8px; height: 32px; padding: 0 30px 0 12px; appearance: none; outline: 0; cursor: pointer; }
+  .langs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .lang { height: 30px; padding: 0 13px; border-radius: 15px; border: 1px solid #E3E3DF; font-size: 13px; background: #fff; transition: all .15s; }
+  .lang:hover { border-color: #C9C9C4; }
+  .lang.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .example { margin-top: 12px; font-family: var(--serif); font-size: 19px; color: var(--ink); }
+  .example span { font-family: "Inter", sans-serif; font-size: 12px; color: var(--ink-3); margin-right: 10px; }
+  .danger { color: var(--red); font-weight: 500; font-size: 13.5px; }
+  .danger.confirm { background: var(--red); color: #fff; padding: 6px 12px; border-radius: 16px; }
+  .path { font-size: 12px; color: var(--ink-2); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }
+  .state { font-size: 12.5px; color: var(--ink-2); }
+
+  /* onboarding */
+  .ob { position: fixed; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 50; }
+  .ob-card { width: min(500px, 90vw); animation: in .4s var(--ease); }
+  .ob-card .logo { width: 56px; height: 56px; margin-bottom: 28px; display: block; }
+  .ob-card h1 { font-size: 48px; }
+  .ob-body { display: flex; flex-direction: column; }
+  .ob-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 36px; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; background: #DCDCD8; transition: all .3s var(--ease); }
+  .dots i.on { width: 18px; border-radius: 3px; background: var(--ink); }
+  .label { font-size: 12px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .06em; margin: 22px 0 10px; }
+  .bar { height: 3px; border-radius: 3px; background: var(--fill); overflow: hidden; margin-top: 12px; }
+  .bar i { display: block; height: 100%; background: var(--ink); transition: width .4s; }
+  .done { color: #3C9A5F; font-weight: 550; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+  .done svg { width: 15px; height: 15px; stroke-width: 2.4; }
+  .hold { display: flex; gap: 8px; }
+  .hold kbd { font-size: 16px; padding: 10px 16px; border-radius: 10px; animation: press 2.4s ease-in-out infinite; }
+  .hold kbd:nth-child(2) { animation-delay: .1s; }
+  @keyframes press { 0%, 60%, 100% { transform: none; } 20%, 45% { transform: translateY(2px); border-bottom-width: 1px; } }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); opacity: 0; background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; transition: all .3s var(--ease); pointer-events: none; z-index: 99; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  mark { background: #FFF1A8; color: inherit; border-radius: 2px; }
+  @media (max-width: 820px) { aside { width: 64px; } .brand b, .nav span, .side-foot { display: none; } .stats { grid-template-columns: repeat(2, 1fr); } .stat:nth-child(3) { border-left: 0; padding-left: 0; } .wrap { padding: 36px 24px 60px; } }
+</style>
+</head>
+<body>
+<svg style="display:none">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+</svg>
+
+<aside>
+  <div class="brand"><img src="assets/logo.png" alt=""><b>Flow</b></div>
+  <button class="nav on" data-view="home"><svg><use href="#i-home"/></svg><span>Home</span><span class="n" id="n-home"></span></button>
+  <button class="nav" data-view="dictionary"><svg><use href="#i-book"/></svg><span>Dictionary</span><span class="n" id="n-dictionary"></span></button>
+  <button class="nav" data-view="snippets"><svg><use href="#i-bolt"/></svg><span>Snippets</span><span class="n" id="n-snippets"></span></button>
+  <button class="nav" data-view="settings"><svg><use href="#i-gear"/></svg><span>Settings</span></button>
+  <div class="side-foot">
+    <span class="local"><i></i>Private, on this PC</span>
+    <div class="keys" id="footKeys"></div>
+  </div>
+</aside>
+
+<main id="scroll"><div class="wrap" id="view"></div></main>
+<div class="ob" id="ob" hidden><div class="ob-card" id="obCard"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+const SHORTCUTS = { "ctrl+win": ["Ctrl", "Win"], "right ctrl": ["Right Ctrl"], "caps lock": ["Caps Lock"], "f8": ["F8"] };
+const LANGS = { en: "English", fi: "Finnish", fr: "French", ar: "Arabic", sv: "Swedish", de: "German", es: "Spanish", it: "Italian", nl: "Dutch", pt: "Portuguese", et: "Estonian", ru: "Russian", tr: "Turkish", zh: "Chinese", ja: "Japanese", hi: "Hindi", ur: "Urdu" };
+const CATS = [
+  ["personal", "Personal chats", "WhatsApp, Discord, Telegram, Instagram"],
+  ["work", "Work chats", "Teams, Slack, LinkedIn"],
+  ["email", "Email", "Outlook, Gmail and other mail"],
+  ["ai", "AI chats", "ChatGPT, Claude, Codex, Gemini"],
+  ["code", "Code", "VS Code, Cursor, terminals"],
+  ["docs", "Docs and notes", "Word, Notion, Obsidian, Google Docs"],
+  ["other", "Everything else", "Browsers and all other apps"],
+];
+const APP_NAMES = { whatsapp: "WhatsApp", code: "VS Code", "ms-teams": "Teams", teams: "Teams", olk: "Outlook", chatgpt: "ChatGPT", windowsterminal: "Terminal", wt: "Terminal", winword: "Word", powerpnt: "PowerPoint" };
+const STYLE_EX = { formal: "Hey, are we still on for tonight? I can bring snacks.", casual: "Hey, are we still on for tonight? I can bring snacks", "very casual": "hey are we still on for tonight? i can bring snacks" };
+const $ = (s) => document.querySelector(s);
+const api = () => window.pywebview.api;
+let view = "home", items = [], stamp = -1, confirmClear = false, showAllNotes = false, showTech = false, scanning = false, query = "";
+let S = { shortcut: "ctrl+win", styles: {}, languages: ["en"], snippets: [], cleanup: true, learn: true, texting: true, voice_notes: {}, ollama: {} };
+let M = { terms: [], fixes: [], scanned: null }, I = { words: 0, minutes_saved: 0, wpm: 0, apps: [], known: 0 };
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const kbd = (sc) => (SHORTCUTS[sc] || [sc]).map((k) => `<kbd>${k}</kbd>`).join("");
+const appName = (a) => { const k = (a || "").toLowerCase(); return APP_NAMES[k] || (k ? k[0].toUpperCase() + k.slice(1) : ""); };
+const mine = () => M.terms.filter((t) => ["you", "learned", "history", "project"].includes(t.source));
+const section = (title, aside = "") => `<div class="section"><h2>${title}</h2>${aside !== "" ? `<span class="aside">${aside}</span>` : ""}</div>`;
+
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1900); }
+function countUp(el) {
+  const to = +el.dataset.to, t0 = performance.now();
+  const step = (t) => { const p = Math.min(1, (t - t0) / 650), e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(to * e).toLocaleString(); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function seg(key, value, options) {
+  return `<div class="seg" data-seg="${key}">${options.map((o) => `<button data-v="${o}" class="${o === value ? "on" : ""}">${o[0].toUpperCase() + o.slice(1)}</button>`).join("")}<span class="thumb"></span></div>`;
+}
+function layoutSegs() {
+  document.querySelectorAll(".seg").forEach((g) => {
+    const on = g.querySelector("button.on") || g.querySelector("button"), th = g.querySelector(".thumb");
+    th.style.width = on.offsetWidth + "px"; th.style.transform = `translateX(${on.offsetLeft - 2}px)`;
+  });
+}
+function dayLabel(d) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  const diff = Math.round((today - x) / 864e5);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return x.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
+
+// ---------------------------------------------------------------- home
+function renderHome() {
+  const q = query.trim().toLowerCase();
+  const list = q ? items.filter((i) => i.text.toLowerCase().includes(q)) : items;
+  const h = new Date().getHours();
+  const greet = h < 5 ? "Up late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  const first = (S.name || "").split(" ")[0];
+  const top = I.apps[0] ? I.apps[0][1] : 1;
+  let html = `<h1>${greet}${first ? `, <em>${esc(first)}</em>` : ""}</h1>
+    <p class="lede">Hold ${kbd(S.shortcut)} and talk. Let go, and it's typed.</p>
+    <div class="stats">
+      <div class="stat"><b data-to="${I.words}">0</b><span>words dictated</span></div>
+      <div class="stat"><b data-to="${I.minutes_saved}">0</b><span>minutes saved</span></div>
+      <div class="stat"><b data-to="${I.wpm}">0</b><span>words per minute</span></div>
+      <div class="stat"><b data-to="${I.known}">0</b><span>of your words learned</span></div>
+    </div>`;
+  if (I.apps.length) {
+    html += section("Where you talk") + `<div class="apps">${I.apps.map(([a, c]) => `<div class="appbar"><span>${esc(appName(a))}</span><span class="track"><i style="width:${Math.max(3, c / top * 100)}%"></i></span><span class="c">${c}</span></div>`).join("")}</div>`;
+  }
+  html += `<div class="section"><h2>Recent</h2><label class="search"><svg><use href="#i-search"/></svg><input id="q" placeholder="Search" spellcheck="false" value="${esc(query)}"></label></div>`;
+  if (!items.length) {
+    html += `<div class="empty"><strong>Nothing yet.</strong>Hold ${kbd(S.shortcut)} anywhere and say something.</div>`;
+  } else if (!list.length) {
+    html += `<div class="empty"><strong>No matches.</strong>Nothing you've said contains "${esc(q)}".</div>`;
+  } else {
+    let last = "";
+    for (const i of list.slice(0, 300)) {
+      const d = new Date(i.ts), label = dayLabel(d);
+      if (label !== last) { html += `<div class="day">${label}</div>`; last = label; }
+      let text = esc(i.text);
+      if (q) text = text.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), (m) => `<mark>${m}</mark>`);
+      const meta = [appName(i.app), i.lang && i.lang !== "en" && (LANGS[i.lang] || i.lang)].filter(Boolean).join(" · ");
+      html += `<div class="entry" data-ts="${i.ts}"><time>${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}</time>
+        <div class="body"><p class="editable" title="Click to fix a word. Flow learns from it.">${text}</p>${meta ? `<div class="meta">${esc(meta)}</div>` : ""}</div>
+        <div class="acts"><button class="icon" data-act="copy" title="Copy"><svg><use href="#i-copy"/></svg></button><button class="icon" data-act="delete" title="Delete"><svg><use href="#i-trash"/></svg></button></div></div>`;
+    }
+  }
+  $("#view").innerHTML = html;
+  if (!renderHome.animated) { document.querySelectorAll(".stat b").forEach(countUp); renderHome.animated = true; }
+  else document.querySelectorAll(".stat b").forEach((b) => (b.textContent = (+b.dataset.to).toLocaleString()));
+  const qi = $("#q");
+  qi.oninput = () => { query = qi.value; const pos = qi.selectionStart; renderHome(); const n = $("#q"); n.focus(); n.setSelectionRange(pos, pos); };
+}
+
+function startEdit(p) {
+  if (p.isContentEditable) return;
+  const row = p.closest(".entry"), item = items.find((i) => i.ts === row.dataset.ts);
+  p.textContent = item.text; p.contentEditable = "true"; p.classList.add("editing"); p.focus();
+  document.getSelection().selectAllChildren(p); document.getSelection().collapseToEnd();
+  const done = async (save) => {
+    p.onblur = p.onkeydown = null; p.contentEditable = "false"; p.classList.remove("editing");
+    const text = p.innerText.trim();
+    if (save && text && text !== item.text) {
+      const learned = await api().edit(item.ts, text);
+      await refresh(true); M = await api().memory();
+      toast(learned.length ? "Learned " + learned.join(", ") : "Saved");
+    } else renderHome();
+  };
+  p.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); done(true); } if (e.key === "Escape") { e.preventDefault(); done(false); } };
+  p.onblur = () => done(true);
+}
+
+// ---------------------------------------------------------------- dictionary
+function chip(t) {
+  const tag = t.source === "learned" ? `<span class="tag">learned</span>` : t.source === "history" ? `<span class="tag">you say this</span>` : "";
+  return `<span class="term ${t.source === "you" || t.source === "learned" ? "you" : ""}">${esc(t.text)}${tag}<button class="x" data-rm="${esc(t.text)}" title="Remove"><svg><use href="#i-x"/></svg></button></span>`;
+}
+function renderDictionary() {
+  const by = (s) => M.terms.filter((t) => t.source === s);
+  const you = M.terms.filter((t) => t.source === "you" || t.source === "learned");
+  const notes = by("notes"), projects = by("project"), said = by("history"), built = [...by("tech"), ...by("slang")];
+  const scan = M.scanned ? JSON.parse(M.scanned) : null;
+  let html = `<h1>Dictionary</h1><p class="lede">The words that make it you. Flow listens for them, spells them your way, and learns from every fix.</p>
+    <div class="adder">
+      <input class="field" id="d-word" placeholder="Add a word or a name" spellcheck="false">
+      <input class="field" id="d-heard" placeholder="It keeps writing… (optional)" spellcheck="false">
+      <button class="btn" id="d-add" disabled>Add</button></div>
+    ${section("Yours", you.length)}${you.length ? `<div class="chips">${you.map(chip).join("")}</div>` : `<div class="empty">Words you add, and words Flow learns from your fixes.</div>`}`;
+  if (M.fixes.length) {
+    html += section("Fixes it applies") + M.fixes.map((f) => `<div class="row"><div class="l fix"><span class="from">${esc(f.heard)}</span><span>→</span><span>${esc(f.term)}</span>${f.active ? "" : `<span class="note">active after one more</span>`}</div>
+      <button class="icon" data-rmfix="${esc(f.heard)}" data-term="${esc(f.term)}" title="Forget"><svg><use href="#i-x"/></svg></button></div>`).join("");
+  }
+  if (said.length) html += section("Things you say a lot") + `<div class="chips">${said.map(chip).join("")}</div>`;
+  if (projects.length) html += section("Your projects", projects.length) + `<div class="chips">${projects.map(chip).join("")}</div>`;
+  html += `<div class="section"><h2>From your notes</h2><button class="link" id="d-scan">${scanning ? "Scanning…" : "Rescan"}</button></div>
+    ${scan ? `<p class="note" style="margin:12px 0 0">${notes.length} terms from ${scan.files} notes in ${scan.vaults.map(esc).join(" and ")}. Remove anything that doesn't belong.</p>` : ""}
+    <div class="chips">${(showAllNotes ? notes : notes.slice(0, 48)).map(chip).join("") || `<span class="note">Flow reads your Obsidian vaults on this PC to learn your names, places and projects.</span>`}</div>
+    ${notes.length > 48 ? `<p style="margin:10px 0 0"><button class="link" id="d-more">${showAllNotes ? "Show fewer" : `Show all ${notes.length}`}</button></p>` : ""}`;
+  if (built.length) {
+    html += `<div class="section"><h2>Built in</h2><button class="link" id="d-tech">${showTech ? "Hide" : "Show"} ${built.length}</button></div>
+      <p class="note" style="margin:12px 0 0">Tech spelled properly (GitHub, NumPy, PyTorch) and slang spelled how it's typed (deadass, lowkey, rizz).</p>
+      ${showTech ? `<div class="chips">${built.map(chip).join("")}</div>` : ""}`;
+  }
+  $("#view").innerHTML = html;
+  const w = $("#d-word"), hh = $("#d-heard"), b = $("#d-add");
+  w.oninput = () => (b.disabled = !w.value.trim());
+  const add = async () => { const word = w.value.trim(); if (!word) return; await api().add_term(word, hh.value.trim()); M = await api().memory(); render(); toast("Added " + word); $("#d-word").focus(); };
+  b.onclick = add; [w, hh].forEach((el) => el.onkeydown = (e) => e.key === "Enter" && add());
+  document.querySelectorAll("[data-rm]").forEach((el) => el.onclick = async () => { await api().remove_term(el.dataset.rm); M = await api().memory(); render(); });
+  document.querySelectorAll("[data-rmfix]").forEach((el) => el.onclick = async () => { await api().remove_fix(el.dataset.rmfix, el.dataset.term); M = await api().memory(); render(); });
+  $("#d-scan").onclick = async () => { if (scanning) return; scanning = true; render(); const r = await api().scan_vaults(); scanning = false; M = await api().memory(); render(); toast(`Found ${r.terms} terms in ${r.files} notes`); };
+  if ($("#d-more")) $("#d-more").onclick = () => { showAllNotes = !showAllNotes; render(); };
+  if ($("#d-tech")) $("#d-tech").onclick = () => { showTech = !showTech; render(); };
+}
+
+// ---------------------------------------------------------------- snippets
+function renderSnippets() {
+  let html = `<h1>Snippets</h1><p class="lede">Say a short phrase, get the full text. Your email, links, the replies you type all the time.</p>
+    <div class="adder">
+      <input class="field" id="s-trigger" placeholder='When I say… e.g. "my email"' spellcheck="false">
+      <textarea class="field" id="s-text" placeholder="…type this instead" spellcheck="false"></textarea>
+      <button class="btn" id="s-add" disabled>Add snippet</button></div>
+    ${section("Your snippets", S.snippets.length || "")}`;
+  html += S.snippets.length ? S.snippets.map((s, i) => `<div class="row"><div class="l snip"><div class="t">"${esc(s.trigger)}"</div><div class="e">${esc(s.text)}</div></div>
+      <button class="icon" data-del="${i}" title="Remove"><svg><use href="#i-trash"/></svg></button></div>`).join("")
+    : `<div class="empty"><strong>None yet.</strong>Try one for your email address or a calendar link.</div>`;
+  $("#view").innerHTML = html;
+  const t = $("#s-trigger"), x = $("#s-text"), b = $("#s-add");
+  t.oninput = x.oninput = () => (b.disabled = !t.value.trim() || !x.value.trim());
+  b.onclick = async () => { const trigger = t.value.trim(); await save({ snippets: [{ trigger, text: x.value }, ...S.snippets.filter((s) => s.trigger.toLowerCase() !== trigger.toLowerCase())] }, "Snippet added"); };
+  document.querySelectorAll("[data-del]").forEach((el) => el.onclick = () => { const n = S.snippets.slice(); n.splice(+el.dataset.del, 1); save({ snippets: n }, "Removed"); });
+}
+
+// ---------------------------------------------------------------- settings
+function renderSettings() {
+  const opt = Object.keys(SHORTCUTS).map((k) => `<option value="${k}" ${k === S.shortcut ? "selected" : ""}>${SHORTCUTS[k].join(" + ")}</option>`).join("");
+  const vn = S.voice_notes || {}, ol = S.ollama || {}, st = S.status || {};
+  const engine = st.device === "cuda" ? `Whisper ${esc(st.model)} on your ${esc(st.gpu || "GPU")}.` : S.gpu && !S.cuda ? `Running on the CPU. GPU acceleration (1.4 GB) makes it several times faster on your ${esc(S.gpu)}.` : S.gpu && S.cuda ? "GPU acceleration is installed. Quit and reopen Flow from the tray to use it." : "Whisper, running on the CPU.";
+  $("#view").innerHTML = `<h1>Settings</h1><p class="lede">Everything runs on this PC. No account, no cloud.</p>
+    ${section("Dictation")}
+    <div class="row"><div class="l"><b>Shortcut</b><small>Hold to talk, let go to paste. Double-tap, or tap Space while holding, for hands-free. Esc cancels.</small></div><select id="s-shortcut">${opt}</select></div>
+    <div class="row col"><div class="l"><b>Languages you speak</b><small>Flow listens for these and follows you when you switch mid-conversation.</small></div>
+      <div class="under"><div class="langs">${Object.entries(LANGS).map(([k, l]) => `<button class="lang ${S.languages.includes(k) ? "on" : ""}" data-lang="${k}">${l}</button>`).join("")}</div></div></div>
+    ${section("Style", "Flow checks which app you're in")}
+    ${CATS.map(([k, name, sub]) => `<div class="row col"><div class="l"><b>${name}</b><small>${sub}</small></div>${seg("styles." + k, S.styles[k], ["formal", "casual", "very casual"])}
+      ${k === "personal" ? `<div class="under"><div class="example"><span>Reads like</span>${esc(STYLE_EX[S.styles[k]])}</div></div>` : ""}</div>`).join("")}
+    <div class="row"><div class="l"><b>Texting shortcuts</b><small>In personal chats, "I don't know" becomes idk. Also tbh, ngl, istg, ong, wyd, ofc, lmk, btw, ig, dw, rn, fr, plz.</small></div><button class="switch ${S.texting ? "on" : ""}" data-toggle="texting"></button></div>
+    ${section("Intelligence")}
+    <div class="row"><div class="l"><b>Speech engine</b><small>${engine}</small></div>${S.gpu && !S.cuda ? `<button class="btn ghost" id="s-cuda">Download</button>` : ""}</div>
+    <div class="row"><div class="l"><b>Smart cleanup</b><small>${ol.model ? "Removes ums and applies your self-corrections with a small local model. It can only delete words, never invent them." : ol.running ? "Download the 1.4 GB cleanup model to turn this on." : "Needs Ollama (ollama.com). Until then Flow uses basic cleanup."}</small></div>
+      ${ol.model ? `<button class="switch ${S.cleanup ? "on" : ""}" data-toggle="cleanup"></button>` : ol.running ? `<button class="btn ghost" id="s-pull">Download</button>` : ""}</div>
+    <div class="row"><div class="l"><b>Learn from my fixes</b><small>A few seconds after pasting, Flow checks whether you corrected a word and remembers it. Password fields are never read.</small></div><button class="switch ${S.learn ? "on" : ""}" data-toggle="learn"></button></div>
+    ${section("Obsidian")}
+    <div class="row col"><div class="l"><b>Voice notes</b><small>Every dictation goes into a daily note in your vault. The folder is kept out of git, so it stays on this PC.</small></div><button class="switch ${vn.enabled ? "on" : ""}" id="s-vn"></button>
+      ${vn.enabled && vn.folder ? `<div class="under"><span class="path">${esc(vn.folder)}</span></div>` : ""}</div>
+    ${section("General")}
+    <div class="row"><div class="l"><b>Open at sign-in</b><small>Flow waits in the tray, ready when you are.</small></div><button class="switch ${S.startup ? "on" : ""}" data-toggle="startup"></button></div>
+    <div class="row"><div class="l"><b>History</b><small>${items.length} dictation${items.length === 1 ? "" : "s"} saved on this PC.</small></div><button class="danger ${confirmClear ? "confirm" : ""}" id="s-clear">${confirmClear ? "Click again to clear" : "Clear"}</button></div>`;
+  layoutSegs();
+  $("#s-shortcut").onchange = (e) => save({ shortcut: e.target.value });
+  document.querySelectorAll("[data-seg]").forEach((g) => g.querySelectorAll("button").forEach((b) => b.onclick = () => {
+    g.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); layoutSegs();
+    const cat = g.dataset.seg.split(".")[1]; setTimeout(() => save({ styles: { ...S.styles, [cat]: b.dataset.v } }), 220);
+  }));
+  document.querySelectorAll("[data-lang]").forEach((b) => b.onclick = () => { const l = b.dataset.lang; const n = S.languages.includes(l) ? S.languages.filter((x) => x !== l) : [...S.languages, l]; if (n.length) save({ languages: n }); });
+  document.querySelectorAll("[data-toggle]").forEach((b) => b.onclick = () => { b.classList.toggle("on"); setTimeout(() => save({ [b.dataset.toggle]: !S[b.dataset.toggle] }), 220); });
+  $("#s-vn").onclick = async (e) => { e.currentTarget.classList.toggle("on"); const r = await api().enable_voice_notes(!vn.enabled); S = await api().settings(); render(); toast(r.enabled ? "Voice notes on" : "Voice notes off"); };
+  if ($("#s-cuda")) $("#s-cuda").onclick = async (e) => { e.currentTarget.disabled = true; e.currentTarget.textContent = "Downloading…"; await api().setup_run("cuda"); pollSetup(async (r) => { S = await api().settings(); render(); toast(r.error ? "Download failed" : "Done. Reopen Flow to use the GPU"); }); };
+  if ($("#s-pull")) $("#s-pull").onclick = async () => { await api().setup_run("llm"); toast("Downloading in the background"); pollSetup(async () => { S = await api().settings(); render(); }); };
+  $("#s-clear").onclick = async () => {
+    if (!confirmClear) { confirmClear = true; render(); setTimeout(() => { confirmClear = false; view === "settings" && render(); }, 3000); return; }
+    confirmClear = false; await api().clear(); await refresh(true); toast("History cleared");
+  };
+}
+
+// ---------------------------------------------------------------- onboarding
+let ob = { step: 0, name: "", langs: ["en"], scan: true, notes: false, sys: null };
+function pollSetup(onDone) {
+  clearInterval(pollSetup.h);
+  pollSetup.h = setInterval(async () => {
+    const st = await api().setup_status();
+    const bar = document.querySelector("#obBar i"), lab = $("#obLabel");
+    if (bar && st.total) bar.style.width = (st.done / st.total * 100).toFixed(1) + "%";
+    if (lab && st.label) lab.textContent = st.label + (st.total ? ` · ${(st.done / 1e9).toFixed(2)} of ${(st.total / 1e9).toFixed(2)} GB` : "");
+    if (!st.task) { clearInterval(pollSetup.h); onDone(st); }
+  }, 400);
+}
+function obRender() {
+  const c = $("#obCard"), dots = `<div class="dots">${[0, 1, 2, 3].map((i) => `<i class="${i === ob.step ? "on" : ""}"></i>`).join("")}</div>`;
+  const sys = ob.sys || {};
+  if (ob.step === 0) {
+    c.innerHTML = `<img class="logo" src="assets/logo.png" alt=""><h1>Talk. <em>It types.</em></h1><p class="lede">Flow puts your words wherever you're typing. It learns your names and the way you write, and all of it stays on this PC.</p>
+      <div class="ob-foot">${dots}<button class="btn" id="obNext">Get started</button></div>`;
+  } else if (ob.step === 1) {
+    c.innerHTML = `<h1>About you</h1><p class="lede">So Flow spells your name right from the first word.</p>
+      <div class="ob-body"><div class="label">Your name</div><input class="field" id="obName" value="${esc(ob.name)}" spellcheck="false">
+      <div class="label">Languages you speak</div><div class="langs" style="margin:0">${Object.entries(LANGS).slice(0, 12).map(([k, l]) => `<button class="lang ${ob.langs.includes(k) ? "on" : ""}" data-oblang="${k}">${l}</button>`).join("")}</div></div>
+      <div class="ob-foot">${dots}<button class="btn" id="obNext">Continue</button></div>`;
+  } else if (ob.step === 2) {
+    const gpu = sys.gpu ? `${esc(sys.gpu[0])}, ${sys.gpu[1]} GB` : "No NVIDIA GPU, so Flow runs on the CPU";
+    const need = [!sys.model_ready && ["model", "Speech model", `${sys.model}, ${sys.model_gb} GB`], sys.gpu && !sys.cuda && ["cuda", "GPU acceleration", "NVIDIA libraries, 1.4 GB"], sys.ollama && sys.ollama.running && !sys.ollama.model && ["llm", "Smart cleanup", "1.4 GB"]].filter(Boolean);
+    c.innerHTML = `<h1>One download</h1><p class="lede">After this, Flow never needs the internet again.</p>
+      <div class="ob-body"><div class="row"><div class="l"><b>This computer</b><small>${gpu}</small></div></div>
+      ${need.length ? need.map(([k, l, sz]) => `<div class="row" data-task="${k}"><div class="l"><b>${l}</b><small>${sz}</small></div><span class="state">Waiting</span></div>`).join("") : `<div class="row"><div class="l"><b>Everything is already here</b><small>Nothing to download.</small></div><span class="done"><svg><use href="#i-check"/></svg>Ready</span></div>`}
+      <div id="obProg" hidden><div class="bar" id="obBar"><i style="width:0"></i></div><p class="note" id="obLabel" style="margin:8px 0 0">Starting…</p></div></div>
+      <div class="ob-foot">${dots}<button class="btn" id="obNext">${need.length ? "Download" : "Continue"}</button></div>`;
+    c.dataset.need = JSON.stringify(need.map((n) => n[0]));
+  } else if (ob.step === 3) {
+    const has = (sys.vaults || []).length;
+    c.innerHTML = `<h1>Make it <em>yours</em></h1><p class="lede">${has ? "Flow found your Obsidian vault." : "That's it."}</p><div class="ob-body">
+      ${has ? `<div class="row"><div class="l"><b>Learn my vocabulary from my notes</b><small>Names, places, projects. Read on this PC only.</small></div><button class="switch ${ob.scan ? "on" : ""}" id="obScan"></button></div>
+      <div class="row"><div class="l"><b>Save voice notes to Obsidian</b><small>A daily note of everything you dictate, kept out of git.</small></div><button class="switch ${ob.notes ? "on" : ""}" id="obNotes"></button></div>` : ""}
+      <div class="label">Try it anywhere</div><div class="hold">${kbd("ctrl+win")}</div></div>
+      <div class="ob-foot">${dots}<button class="btn" id="obNext">Start using Flow</button></div>`;
+  }
+  $("#obNext").onclick = obNext;
+  document.querySelectorAll("[data-oblang]").forEach((b) => b.onclick = () => { const l = b.dataset.oblang; ob.langs = ob.langs.includes(l) ? ob.langs.filter((x) => x !== l) : [...ob.langs, l]; if (!ob.langs.length) ob.langs = [l]; b.classList.toggle("on", ob.langs.includes(l)); });
+  if ($("#obScan")) $("#obScan").onclick = (e) => { ob.scan = !ob.scan; e.currentTarget.classList.toggle("on", ob.scan); };
+  if ($("#obNotes")) $("#obNotes").onclick = (e) => { ob.notes = !ob.notes; e.currentTarget.classList.toggle("on", ob.notes); };
+}
+async function obNext() {
+  const btn = $("#obNext");
+  if (ob.step === 1) ob.name = $("#obName").value.trim();
+  if (ob.step === 2) {
+    const need = JSON.parse($("#obCard").dataset.need || "[]");
+    if (need.length) {
+      btn.disabled = true; btn.textContent = "Downloading…"; $("#obProg").hidden = false;
+      for (const task of need) {
+        const el = document.querySelector(`[data-task="${task}"] .state`); el.textContent = "Downloading…";
+        await api().setup_run(task, task === "model" ? ob.sys.model : null);
+        const st = await new Promise((res) => pollSetup(res));
+        if (st.error) { el.textContent = "Failed"; $("#obLabel").textContent = st.error; btn.disabled = false; btn.textContent = "Try again"; return; }
+        el.outerHTML = `<span class="done"><svg><use href="#i-check"/></svg>Done</span>`;
+      }
+    }
+  }
+  if (ob.step === 3) {
+    btn.disabled = true; btn.textContent = "Getting to know you…";
+    if (ob.notes) await api().enable_voice_notes(true);
+    await api().finish_onboarding(ob.name, ob.langs, ob.scan && (ob.sys.vaults || []).length > 0);
+    $("#ob").hidden = true; await boot(); toast("You're set. Hold Ctrl + Win to talk.");
+    return;
+  }
+  ob.step++; obRender();
+}
+
+// ---------------------------------------------------------------- shell
+async function save(patch, msg = "Saved") { await api().save_settings(patch); S = await api().settings(); render(); toast(msg); }
+function render() {
+  const counts = { home: items.length, dictionary: mine().length, snippets: S.snippets.length };
+  for (const k of ["home", "dictionary", "snippets"]) $("#n-" + k).textContent = counts[k] || "";
+  $("#footKeys").innerHTML = kbd(S.shortcut) + `<span style="margin-left:2px">to talk</span>`;
+  if (document.activeElement && (document.activeElement.isContentEditable || document.activeElement.id === "q")) return;
+  ({ home: renderHome, dictionary: renderDictionary, snippets: renderSnippets, settings: renderSettings })[view]();
+}
+async function refresh(force) {
+  const s = await api().stamp();
+  if (!force && s === stamp) return;
+  stamp = s; items = await api().history(); I = await api().insights();
+  if (view === "home" || force) render();
+}
+document.querySelectorAll(".nav").forEach((b) => b.onclick = () => {
+  document.querySelectorAll(".nav").forEach((x) => x.classList.toggle("on", x === b));
+  view = b.dataset.view; confirmClear = false; $("#scroll").scrollTop = 0; renderHome.animated = view !== "home";
+  render(); const v = $("#view"); v.classList.remove("view"); void v.offsetWidth; v.classList.add("view");
+});
+$("#view").addEventListener("click", async (e) => {
+  const p = e.target.closest("p.editable"); if (p) return startEdit(p);
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const ts = btn.closest(".entry").dataset.ts, item = items.find((i) => i.ts === ts);
+  if (btn.dataset.act === "copy") { await api().copy(item.text); toast("Copied"); }
+  else { await api().delete(ts); await refresh(true); toast("Deleted"); }
+});
+window.addEventListener("resize", layoutSegs);
+
+async function boot() {
+  S = await api().settings(); M = await api().memory();
+  await refresh(true);
+  clearInterval(boot.h); boot.h = setInterval(refresh, 1500);
+}
+async function init() {
+  if (init.done) return; init.done = true;
+  S = await api().settings();
+  if (!S.onboarded) {
+    ob.sys = await api().system(); ob.name = ob.sys.name || ""; ob.langs = S.languages && S.languages.length ? S.languages : ["en"];
+    $("#ob").hidden = false; obRender();
+  }
+  await boot();
+}
+if (window.pywebview && window.pywebview.api && window.pywebview.api.settings) init();
+else window.addEventListener("pywebviewready", init);
+})();
+</script>
+</body>
+</html>
