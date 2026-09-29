@@ -12,95 +12,79 @@
   @font-face { font-family: "Instrument Serif"; font-style: italic; src: url("assets/InstrumentSerif-italic.woff2") format("woff2"); font-display: swap; }
   :root { --ink: #141414; --ink-2: #6B6B68; --ink-3: #A5A5A1; --line: #EAEAE7; --side: #F7F7F5; --serif: "Instrument Serif", Georgia, serif; }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.55 "Inter", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.005em; }
+  html, body { height: 100%; }
+  body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.55 "Inter", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.005em;
+    display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
   a { color: inherit; }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 28px; }
+  .wrap { width: 100%; max-width: 1360px; margin: 0 auto; padding: 0 clamp(24px, 4vw, 56px); }
+
   nav { display: flex; align-items: center; justify-content: space-between; height: 76px; }
   .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .brand img { width: 28px; height: 28px; }
   .brand b { font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1; }
   nav .gh { font-size: 14px; color: var(--ink-2); text-decoration: none; }
   nav .gh:hover { color: var(--ink); }
-  header { padding: 72px 0 56px; }
-  h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(56px, 9vw, 104px); line-height: .98; letter-spacing: -.02em; margin: 0; }
+
+  main { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.3fr); gap: clamp(32px, 5vw, 72px); align-items: center; min-height: 0; }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(52px, min(7.2vw, 11.5vh), 104px); line-height: .96; letter-spacing: -.02em; margin: 0; }
   h1 em { color: var(--ink-2); }
-  .lede { font-size: 19px; color: var(--ink-2); max-width: 560px; margin: 26px 0 36px; }
-  .cta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .lede { font-size: clamp(15px, 1.35vw, 18px); color: var(--ink-2); max-width: 470px; margin: clamp(16px, 3vh, 26px) 0 clamp(20px, 4vh, 34px); }
+  .cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   .btn { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 26px; border-radius: 26px; background: var(--ink); color: #fff; text-decoration: none; font-weight: 550; font-size: 15px; transition: opacity .15s; }
   .btn:hover { opacity: .86; }
   .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-  .fine { font-size: 13.5px; color: var(--ink-3); }
-  .shot { margin: 8px 0 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--side); }
-  .shot img { display: block; width: 100%; height: auto; }
-  .how { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 96px 0 0; }
-  .how div { padding: 28px 28px 30px 0; }
-  .how div + div { border-left: 1px solid var(--line); padding-left: 28px; }
-  .how b { display: block; font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1; margin-bottom: 12px; }
-  .how kbd { font: 500 13px/1 "Inter", sans-serif; background: #fff; border: 1px solid #DDDDD9; border-bottom-width: 2px; border-radius: 6px; padding: 3px 7px; }
-  .how p { margin: 0; color: var(--ink-2); font-size: 15px; }
-  h2 { font-size: 12px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .07em; margin: 96px 0 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
-  .row { display: grid; grid-template-columns: 260px 1fr; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--line); }
-  .row b { font-weight: 550; font-size: 16px; }
-  .row p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
-  .end { text-align: center; padding: 120px 0 100px; }
-  .end h1 { font-size: clamp(44px, 6vw, 72px); margin-bottom: 30px; }
-  .end .cta { justify-content: center; }
-  footer { border-top: 1px solid var(--line); padding: 26px 0 40px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-3); }
+  .fine { font-size: 13px; color: var(--ink-3); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; margin-top: clamp(24px, 5.5vh, 52px); border-top: 1px solid var(--line); }
+  .steps div { padding: 16px 28px 0 0; }
+  .steps div + div { padding-left: 28px; border-left: 1px solid var(--line); }
+  .steps b { display: block; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1; margin-bottom: 6px; }
+  .steps span { font-size: 13px; color: var(--ink-2); }
+  kbd { font: 500 11.5px/1 "Inter", sans-serif; color: var(--ink); background: #fff; border: 1px solid #DDDDD9; border-bottom-width: 2px; border-radius: 5px; padding: 2px 6px; }
+
+  .shot { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--side); box-shadow: 0 30px 60px -30px rgba(0,0,0,.18); }
+  .shot img { display: block; width: 100%; height: auto; max-height: calc(100vh - 190px); object-fit: cover; object-position: top left; }
+
+  footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; height: 60px; align-items: center; font-size: 13px; color: var(--ink-3); border-top: 1px solid var(--line); }
   footer a { color: var(--ink-2); text-decoration: none; }
   footer a:hover { color: var(--ink); }
-  @media (max-width: 760px) {
-    header { padding: 36px 0 40px; }
-    .how { grid-template-columns: 1fr; }
-    .how div + div { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
-    .row { grid-template-columns: 1fr; gap: 6px; }
+
+  /* phones and short windows: stack and scroll normally */
+  @media (max-width: 900px), (max-height: 600px) {
+    body { overflow: auto; display: block; }
+    main { grid-template-columns: 1fr; padding: 24px 0 40px; }
+    .shot img { max-height: none; }
+    footer { height: auto; padding: 20px 0 30px; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <nav>
+  <nav class="wrap">
     <a class="brand" href="#"><img src="assets/logo.png" alt=""><b>Flow</b></a>
     <a class="gh" href="https://github.com/Ijtihed/flow-local">GitHub</a>
   </nav>
 
-  <header>
-    <h1>Talk.<br><em>It types.</em></h1>
-    <p class="lede">A free, private replacement for Wispr Flow. Hold a key, say what you mean, and it's typed wherever your cursor is. Everything runs on your PC.</p>
-    <div class="cta">
-      <a class="btn" href="https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe">
-        <svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Download for Windows</a>
-      <span class="fine">Windows 10 and 11. Free and open source.</span>
-    </div>
-  </header>
+  <main class="wrap">
+    <section>
+      <h1>Talk.<br><em>It types.</em></h1>
+      <p class="lede">A free, private replacement for Wispr Flow. It learns your names and your style, and everything runs on your PC.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe">
+          <svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Download for Windows</a>
+        <span class="fine">Free and open source</span>
+      </div>
+      <div class="steps">
+        <div><b>Hold</b><span><kbd>Ctrl</kbd> <kbd>Win</kbd></span></div>
+        <div><b>Talk</b><span>in any app</span></div>
+        <div><b>Let go</b><span>it's typed</span></div>
+      </div>
+    </section>
+    <div class="shot"><img src="assets/app.png" alt="The Flow app"></div>
+  </main>
 
-  <div class="shot"><img src="assets/app.png" alt="The Flow app"></div>
-
-  <div class="how">
-    <div><b>Hold</b><p><kbd>Ctrl</kbd> <kbd>Win</kbd> anywhere, in any app.</p></div>
-    <div><b>Talk</b><p>Ramble, correct yourself, switch languages. It keeps up.</p></div>
-    <div><b>Let go</b><p>Clean text appears where you were typing.</p></div>
-  </div>
-
-  <h2>Why Flow</h2>
-  <div class="row"><b>Nothing leaves your PC</b><p>Speech recognition and cleanup run locally. No account, no subscription, works offline.</p></div>
-  <div class="row"><b>It learns you</b><p>Your name, your friends, your jargon. It can read your Obsidian vault and learns from every word you fix.</p></div>
-  <div class="row"><b>It matches the app</b><p>Lowercase and texting shortcuts in chats, proper sentences in email, your style everywhere.</p></div>
-  <div class="row"><b>It never makes things up</b><p>Cleanup can remove ums and handle "at 2, actually 3", but it is not allowed to add a word you didn't say.</p></div>
-  <div class="row"><b>Open source</b><p>MIT licensed. Use the engine in your own projects in a few lines of Python.</p></div>
-
-  <div class="end">
-    <h1>Try it <em>now.</em></h1>
-    <div class="cta">
-      <a class="btn" href="https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe">
-        <svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Download for Windows</a>
-    </div>
-  </div>
-
-  <footer>
-    <span>Flow is not affiliated with Wispr.</span>
-    <span><a href="https://github.com/Ijtihed/flow-local">Source on GitHub</a></span>
+  <footer class="wrap">
+    <span>Windows 10 and 11. Nothing leaves your PC. Not affiliated with Wispr.</span>
+    <a href="https://github.com/Ijtihed/flow-local">Source on GitHub</a>
   </footer>
-</div>
 </body>
 </html>
