@@ -10,3 +10,15 @@ Flow.bat
 *.log
 .vercel
 tests/node_modules/
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+*.jsonl
+speech-key
+update-key
+settings.json
+*.pem
+*.key

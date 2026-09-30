@@ -3,13 +3,42 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import paths
 import setup_tasks
 
 
 class Downloads(unittest.TestCase):
+    def test_recommendation_uses_free_vram_and_ram_with_headroom(self):
+        gpu = ('Test GPU', 12)
+        self.assertEqual(setup_tasks.recommended_model(gpu, 8, 12), 'large-v3')
+        self.assertEqual(setup_tasks.recommended_model(gpu, 3.5, 8), 'large-v3-turbo')
+        self.assertEqual(setup_tasks.recommended_model(gpu, 1.7, 8), 'small')
+        self.assertEqual(setup_tasks.recommended_model(gpu, .5, 8), 'small')
+        self.assertEqual(setup_tasks.recommended_model(gpu, 8, 3), 'small')
+        self.assertIsNone(setup_tasks.recommended_model(gpu, 8, 1))
+        self.assertEqual(setup_tasks.recommended_model(None, None, 8), 'small')
+
+    def test_insufficient_ram_blocks_download_before_starting_a_thread(self):
+        with patch.object(setup_tasks, 'available_ram', return_value=2.5), patch.object(setup_tasks.threading, 'Thread') as thread:
+            with self.assertRaisesRegex(ValueError, 'free RAM'):
+                setup_tasks.run('model', 'large-v3')
+            thread.assert_not_called()
+
+    def test_model_options_are_cpu_only_on_a_full_gpu_and_disable_low_ram(self):
+        with patch.object(setup_tasks, 'nvidia_gpu', return_value=('Test GPU', 12)), patch.object(setup_tasks, 'available_vram', return_value=.5), patch.object(setup_tasks, 'available_ram', return_value=3), patch.object(setup_tasks, 'find_model', return_value=None):
+            info = setup_tasks.hardware_models()
+        self.assertEqual(info['recommended_model'], 'small')
+        self.assertFalse(any(m['gpu_ok'] for m in info['models']))
+        self.assertEqual([m['id'] for m in info['models'] if m['supported']], ['small'])
+
+    def test_unknown_memory_is_marked_unverified(self):
+        with patch.object(setup_tasks, 'nvidia_gpu', return_value=None), patch.object(setup_tasks, 'available_ram', return_value=None), patch.object(setup_tasks, 'find_model', return_value=None):
+            info = setup_tasks.hardware_models()
+        self.assertEqual(info['recommended_model'], 'small')
+        self.assertTrue(all(not m['memory_known'] for m in info['models']))
+
     def test_model_download_is_complete_and_does_not_change_active_engine(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(paths, "MODELS", Path(folder)):
             class Response:

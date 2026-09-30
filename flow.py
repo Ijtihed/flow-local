@@ -27,6 +27,7 @@ import paths
 import setup_tasks
 import vault
 import voicenotes
+import updates
 from engine import CATEGORY_NAMES, RATE, Engine, app_category, foreground_app
 from hotkeys import Hotkeys, send_ctrl_v
 from memory import Memory
@@ -154,6 +155,10 @@ class Flow:
             from system import install_launcher
             install_launcher(paths.launch_command())
         self.keys = Hotkeys(self.events.put, self.settings["shortcut"])
+        self.updating = False
+        self.update_quit_at = 0
+        self.updater = updates.Manager()
+        self.auto_updater = updates.Automatic(self.updater, lambda: self.events.put('update_ready'), self.reserve_update)
         threading.Thread(target=self.load_model, daemon=True).start()
         self.tick()
 
@@ -219,7 +224,7 @@ class Flow:
                 self.engine.whisper = None
                 self.engine.device = "api"
             else:
-                self.engine.load(model)
+                self.engine.load(model, model_name=s.get('model') or 'large-v3')
         except Exception as error:
             health.failed_load(s, error)
             self.loading = False
@@ -244,6 +249,8 @@ class Flow:
     # ------------------------------------------------------------ recording
 
     def start(self, mode):
+        if getattr(self, 'updating', False):
+            return
         import sounddevice as sd
         self.chunks, self.level = [], 0.0
         self.visual_level = 0
@@ -441,7 +448,7 @@ class Flow:
         for command in control.commands():
             try:
                 self.handle_control(command)
-            except (ValueError, TypeError, KeyError):
+            except (ValueError, TypeError, KeyError, updates.UpdateError):
                 pass  # Reject malformed local commands without stopping the recorder.
         while not self.events.empty():
             ev = self.events.get()
@@ -455,6 +462,18 @@ class Flow:
                 self.open_ui()
             elif ev == "quit":
                 return self.quit()
+            elif ev == 'update_ready':
+                # Allow open settings windows to observe installing and close.
+                self.update_quit_at = time.time() + 3
+            elif isinstance(ev, tuple) and ev[0] == 'update_reserve':
+                _, automatic, result, finished = ev
+                if finished.is_set():
+                    continue
+                result.append(self.ready and not self.recording and not self.busy and not self.practice and
+                              (not automatic or paths.load_settings().get('auto_update', True)))
+                if result[0]:
+                    self.updating = True
+                finished.set()
             elif ev == "ready":
                 self.ready = True
                 self._last_error = ""
@@ -507,6 +526,17 @@ class Flow:
                 print("error:", ev[1])
 
         now = time.time()
+        if getattr(self, 'update_quit_at', 0) and now >= self.update_quit_at:
+            return self.quit()
+        if hasattr(self, 'auto_updater'):
+            phase = self.updater.status()['phase']
+            if phase == 'error':
+                if self.updating:
+                    self.open_ui()
+                self.updating = False
+            self.auto_updater.tick(self.settings.get('auto_update', True) and self.settings.get('onboarded') and
+                                   (paths.FROZEN or bool(__import__('os').environ.get('APPIMAGE'))),
+                                   self.ready and not self.recording and not self.busy and not self.practice)
         if self.practice and self.recording:
             if not control.lease_alive(self.practice["id"]):
                 self.cancel()
@@ -541,7 +571,8 @@ class Flow:
                                  "recording": self.recording, "busy": self.busy,
                                  "level": self.visual_level if self.recording else 0,
                                  "elapsed": round(max(0, now - (self.record_started if self.recording else self.state_started)), 1),
-                                 "practice_id": self.practice["id"] if self.practice else None, "error": self._last_error})
+                                 "practice_id": self.practice["id"] if self.practice else None, "error": self._last_error,
+                                 **({'updates': self.updater.status()} if hasattr(self, 'updater') else {})})
             except OSError:
                 pass  # A transient file lock must not stop the microphone/overlay loop.
         self.root.after(16, self.tick)
@@ -550,6 +581,10 @@ class Flow:
         action, args = command.get("action"), command.get("args") or {}
         if action == "quit":
             self.events.put("quit")
+        elif action == 'update_check':
+            self.updater.check()
+        elif action == 'update_install':
+            self.updater.apply(lambda: self.events.put('update_ready'), can_install=lambda: self.reserve_update(False))
         elif action == "practice_start":
             ident = control.valid_session(args.get("id"))
             lang = args.get("language")
@@ -581,10 +616,18 @@ class Flow:
             if self.recording and self.mode == "compose" and args.get("id") == self.compose_session:
                 self.cancel()
 
+    def reserve_update(self, automatic):
+        result, finished = [], threading.Event()
+        self.events.put(('update_reserve', automatic, result, finished))
+        if not finished.wait(3):
+            finished.set()  # Cancel a request whose main-thread turn timed out.
+            return False
+        return bool(result and result[0])
+
     def quit(self):
         self.loading = False
         if self.recording:
-            self.stream.stop()
+            self._close_stream()
         self.engine.unload_llm()
         if self.ui is not None and self.ui.poll() is None:
             self.ui.terminate()

@@ -301,6 +301,40 @@ def nvidia_gpu():
     return name.value.decode(errors="ignore"), round(mem.value / 2**30, 1)
 
 
+def available_vram():
+    """Free memory on CUDA device 0, matching the speech engine's device."""
+    command = shutil.which('nvidia-smi')
+    if not command:
+        return None
+    options = {'creationflags': subprocess.CREATE_NO_WINDOW} if IS_WIN else {}
+    try:
+        result = subprocess.run([command, '--id=0', '--query-gpu=memory.free', '--format=csv,noheader,nounits'],
+                                capture_output=True, text=True, timeout=3, **options)
+        value = float(result.stdout.strip().splitlines()[0]) / 1024
+        return round(value, 2) if result.returncode == 0 and value >= 0 else None
+    except (OSError, ValueError, IndexError, subprocess.TimeoutExpired):
+        return None
+
+
+def available_ram():
+    if IS_WIN:
+        class MemoryStatus(ctypes.Structure):
+            _fields_ = [('length', ctypes.c_ulong), ('load', ctypes.c_ulong)] + [
+                (name, ctypes.c_ulonglong) for name in ('total', 'available', 'page_total', 'page_available',
+                                                       'virtual_total', 'virtual_available', 'extended')]
+        status = MemoryStatus()
+        status.length = ctypes.sizeof(status)
+        if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return round(status.available / 2**30, 2)
+    else:
+        try:
+            values = dict(line.split(':', 1) for line in Path('/proc/meminfo').read_text().splitlines())
+            return round(int(values['MemAvailable'].split()[0]) / 2**20, 2)
+        except (OSError, KeyError, ValueError):
+            pass
+    return None
+
+
 def cuda_dirs():
     import paths
     dirs = [str(paths.CUDA)] if paths.CUDA.exists() else []

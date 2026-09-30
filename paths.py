@@ -22,7 +22,7 @@ DEFAULTS = {"shortcut": "ctrl+win", "styles": DEFAULT_STYLES, "languages": ["en"
             "voice_notes": {"enabled": False, "folder": ""}, "onboarded": False}
 DEFAULTS.update({"speech_provider": "local", "api_model": "gpt-transcribe",
                  "api_base": "https://api.openai.com/v1", "api_consent": False,
-                 "mood": "auto", "tutorial_seen": False})
+                 "mood": "auto", "tutorial_seen": False, "auto_update": True})
 
 
 def load_settings():

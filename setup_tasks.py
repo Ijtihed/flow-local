@@ -20,6 +20,10 @@ import paths
 MODEL_REPOS = {"large-v3": "Systran/faster-whisper-large-v3", "small": "Systran/faster-whisper-small",
                "large-v3-turbo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo"}
 MODEL_SIZE_GB = {"large-v3": 3.1, "small": 0.5, "large-v3-turbo": 1.6}
+# Conservative budgets for our unbatched int8 inference, including headroom.
+# Download size is not the same as runtime memory. See faster-whisper benchmarks.
+MODEL_VRAM_GB = {'small': 1.5, 'large-v3-turbo': 3.0, 'large-v3': 5.0}
+MODEL_RAM_GB = {'small': 2.0, 'large-v3-turbo': 4.0, 'large-v3': 6.0}
 CUDA_WHEELS = [("nvidia-cublas-cu12", "12.9.2.10"), ("nvidia-cudnn-cu12", "9.26.0.51"), ("nvidia-cuda-nvrtc-cu12", "12.9.86")]
 OLLAMA = "http://127.0.0.1:11434"
 LLM = "qwen3:1.7b"
@@ -30,7 +34,7 @@ _lock = threading.Lock()
 
 # ------------------------------------------------------------ detection
 
-from system import nvidia_gpu, cuda_dirs, cuda_ready
+from system import nvidia_gpu, cuda_dirs, cuda_ready, available_vram, available_ram
 
 def find_model(name):
     """Local path of a Whisper model if it's already on this PC."""
@@ -64,18 +68,44 @@ def guess_name():
     from system import display_name
     return vault.find_name(vault.vault_paths()) or display_name()
 
-def recommended_model(gpu):
-    return "large-v3" if gpu and gpu[1] >= 4 else "small"
+def recommended_model(gpu, free_vram=None, free_ram=None):
+    budget = min(gpu[1], free_vram) if gpu and free_vram is not None else (gpu[1] if gpu else 0)
+    for name in ('large-v3', 'large-v3-turbo', 'small'):
+        if budget >= MODEL_VRAM_GB[name] and (free_ram is None or free_ram >= MODEL_RAM_GB[name]):
+            return name
+    return 'small' if free_ram is None or free_ram >= MODEL_RAM_GB['small'] else None
+
+
+def hardware_models():
+    gpu = nvidia_gpu()
+    vram = available_vram() if gpu else None
+    ram = available_ram()
+    budget = min(gpu[1], vram) if gpu and vram is not None else (gpu[1] if gpu else 0)
+    models = [{'id': k, 'gb': v, 'ready': bool(find_model(k)), 'vram_gb': MODEL_VRAM_GB[k],
+               'ram_gb': MODEL_RAM_GB[k], 'supported': ram is None or ram >= MODEL_RAM_GB[k],
+               'gpu_ok': bool(gpu and budget >= MODEL_VRAM_GB[k]),
+               'memory_known': ram is not None and (not gpu or vram is not None)}
+              for k, v in MODEL_SIZE_GB.items()]
+    return {'gpu': gpu, 'free_vram_gb': vram, 'free_ram_gb': ram, 'models': models,
+            'recommended_model': recommended_model(gpu, vram, ram)}
+
+
+def validate_model(name):
+    if name not in MODEL_REPOS:
+        raise ValueError('Choose a supported local speech model.')
+    ram = available_ram()
+    if ram is not None and ram < MODEL_RAM_GB[name]:
+        raise ValueError(f'{name} needs about {MODEL_RAM_GB[name]:g} GB of free RAM. Close other apps, choose a smaller model, or use API speech.')
 
 
 def system_info():
     import vault
-    gpu = nvidia_gpu()
+    hardware = hardware_models()
+    gpu = hardware['gpu']
     s = paths.load_settings()
-    model = s.get("model") or recommended_model(gpu)
+    model = s.get("model") or hardware['recommended_model']
     from system import IS_WIN
-    return {"platform": "windows" if IS_WIN else "linux", "recommended_model": recommended_model(gpu),
-            "models": [{"id": k, "gb": v, "ready": bool(find_model(k))} for k, v in MODEL_SIZE_GB.items()],
+    return {**hardware, "platform": "windows" if IS_WIN else "linux",
             "gpu": gpu, "cuda": cuda_ready() if gpu else None, "model": model, "model_gb": MODEL_SIZE_GB.get(model),
             "model_ready": bool(find_model(model)), "ollama": ollama_status(),
             "vaults": [str(p) for p in vault.vault_paths()], "name": s.get("name") or guess_name()}
@@ -92,6 +122,8 @@ def run(task, *args):
     fn = {"model": _download_model, "cuda": _download_cuda, "llm": _pull_llm}.get(task)
     if not fn or (task == "model" and (not args or args[0] not in MODEL_REPOS)):
         raise ValueError("Choose a supported setup task and model.")
+    if task == 'model':
+        validate_model(args[0])
     with _lock:
         if state["task"]:
             return False

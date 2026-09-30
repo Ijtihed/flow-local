@@ -12,6 +12,13 @@ import paths
 
 
 class EngineSettings(unittest.TestCase):
+    def test_full_gpu_chooses_cpu_before_loading_the_model(self):
+        engine = Engine(MagicMock())
+        model = MagicMock(); model.transcribe.return_value = (iter([]), MagicMock())
+        with patch('engine.add_cuda_dlls'), patch('ctranslate2.get_cuda_device_count', return_value=1), patch('setup_tasks.cuda_ready', return_value=True), patch('setup_tasks.available_vram', return_value=.5), patch('setup_tasks.nvidia_gpu', return_value=('Test GPU', 12)), patch('faster_whisper.WhisperModel', return_value=model) as factory:
+            engine.load('fixture-path', model_name='large-v3')
+        self.assertEqual(factory.call_args.kwargs['device'], 'cpu')
+
     def test_cuda_inference_failure_falls_back_to_cpu(self):
         engine=Engine(None)
         bad=MagicMock();bad.transcribe.side_effect=RuntimeError("Unavailable GPU library")

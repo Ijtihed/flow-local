@@ -76,6 +76,9 @@ class Updates(unittest.TestCase):
         self.assertEqual(file.read_bytes(), self.payload)
         self.assertEqual(progress[-1], (len(self.payload), len(self.payload)))
         self.assertFalse(file.with_suffix('.partial').exists())
+        with patch.object(updates.requests, 'get') as get:
+            self.assertEqual(updates.download(self.asset, '', lambda *a: None), file)
+            get.assert_not_called()
 
     def test_bad_download_does_not_replace_existing_verified_file(self):
         target = self.folder/'updates/1.6.0/FlowSetup.exe'
@@ -93,6 +96,7 @@ class Updates(unittest.TestCase):
             updates.download(self.asset, 'private-dummy-token', lambda *a: None)
         self.assertIn('Authorization', get.call_args_list[0].kwargs['headers'])
         self.assertNotIn('headers', get.call_args_list[1].kwargs)
+        (self.folder/'updates/1.6.0/FlowSetup.exe').unlink()
         for location in ('https://attacker.example/a', 'http://objects.githubusercontent.com/a', 'https://user@objects.githubusercontent.com/a'):
             with patch.object(updates.requests, 'get', return_value=Response(status=302, headers={'Location': location})) as get:
                 with self.assertRaises(updates.UpdateError): updates.download(self.asset, 'dummy', lambda *a: None)

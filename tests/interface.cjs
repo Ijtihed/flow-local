@@ -6,7 +6,7 @@ const FakeTimers = require('@sinonjs/fake-timers');
 const root = require('node:path').resolve(__dirname, '..');
 const read = p => fs.readFileSync(root + '/' + p, 'utf8');
 const clone = x => JSON.parse(JSON.stringify(x));
-const base = {name:'Alex',onboarded:true,tutorial_seen:false,platform:'windows',native_window:false,version:'1.5.1',
+const base = {name:'Alex',onboarded:true,tutorial_seen:false,platform:'windows',native_window:false,version:'1.5.1',auto_update:true,
   shortcut:'ctrl+win',mood:'auto',styles:{personal:'very casual',work:'casual',email:'formal',ai:'very casual',code:'casual',docs:'formal',other:'casual'},
   languages:['en'],snippets:[],voice_notes:{},ollama:{running:false,model:false},speech_provider:'local',model:'small',
   api_model:'gpt-transcribe',api_base:'https://api.openai.com/v1',api_consent:false,api_key_saved:false,
@@ -55,6 +55,7 @@ function dom(html, extra={}) {
     beforeParse(w){w.matchMedia=()=>({matches:!!extra.reducedMotion}); clock=FakeTimers.withGlobal(w).install({now:new Date(2026,8,30,9,35).getTime(),toFake:['Date','setTimeout','clearTimeout','setInterval','clearInterval','performance','requestAnimationFrame','cancelAnimationFrame']});
       if(extra.api) w.pywebview={api:extra.api};
       if(extra.platform) {Object.defineProperty(w.navigator,'platform',{value:extra.platform});Object.defineProperty(w.navigator,'userAgent',{value:extra.ua || extra.platform});}
+      if(extra.touches) Object.defineProperty(w.navigator,'maxTouchPoints',{value:extra.touches});
     }});
   return {page,clock,errors,d:page.window.document,w:page.window,close(){clock.uninstall();page.window.close();}};
 }
@@ -62,7 +63,9 @@ function button(ctx,label){return [...ctx.d.querySelectorAll('button')].find(b=>
 function change(ctx,id,value){const el=ctx.d.getElementById(id);assert(el,id);el.value=value;el.dispatchEvent(new ctx.w.Event('change',{bubbles:true}));}
 function input(ctx,id,value){const el=ctx.d.getElementById(id);assert(el,id);el.value=value;el.dispatchEvent(new ctx.w.Event('input',{bubbles:true}));}
 async function ui(platform) {
-  const f=apiFixture(platform),ctx=dom(read('ui.html'),{api:f.api});
+  const f=apiFixture(platform);
+  f.S.gpu='Limited GPU'; f.S.recommended_model='small';
+  const ctx=dom(read('ui.html'),{api:f.api});
   await ctx.clock.tickAsync(500);
   assert.equal(ctx.d.querySelector('#tutorial').hidden,false);
   assert.equal(ctx.d.querySelectorAll('.brand').length,1);
@@ -103,6 +106,11 @@ async function ui(platform) {
   input(ctx,'s-trigger','my email');input(ctx,'s-text','alex@example.com');button(ctx,'Add shortcut').click();await ctx.clock.tickAsync(20);
   assert.deepEqual(f.S.snippets,[{trigger:'my email',text:'alex@example.com'}]);
   ctx.d.querySelector('[data-view="settings"]').click();
+  assert(ctx.d.querySelector('#settingsSpeech-model option[value="small"]').textContent.includes('recommended'));
+  assert(!ctx.d.querySelector('#settingsSpeech-model option[value="large-v3"]').textContent.includes('recommended'));
+  const auto=ctx.d.querySelector('[data-toggle="auto_update"]');
+  assert(auto.classList.contains('on')); auto.click(); await ctx.clock.tickAsync(240);
+  assert.equal(f.S.auto_update,false);
   assert(!button(ctx,'View report'));
   assert(!ctx.d.querySelector('#view').textContent.includes('Known audio is checked'));
   change(ctx,'settingsSpeech-model','large-v3-turbo');button(ctx,'Use this engine').click();await ctx.clock.tickAsync(20);
@@ -139,7 +147,7 @@ async function ui(platform) {
   Object.assign(f.updates,{phase:'current'});await ctx.clock.tickAsync(500);
   assert.equal(ctx.d.querySelector('#updateMessage').textContent,"You're up to date.");
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));
-  ctx.close();checks+=25;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection, diagnostic warning, updates PASS');
+  ctx.close();checks+=29;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection, diagnostic warning, updates PASS');
 }
 async function setup(platform) {
   const f=apiFixture(platform,true),ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(50);
@@ -156,8 +164,9 @@ async function setup(platform) {
   assert(f.S.onboarded);assert.equal(f.S.name,'Alex');assert.equal(f.calls[0].model,'large-v3-turbo');assert(!ctx.d.querySelector('#tutorial').hidden);
   assert.equal(ctx.errors.length,0);ctx.close();checks+=7;console.log(platform+' first-run setup: required name, model choice and consent PASS');
 }
-async function website(platform,ua,reducedMotion=false) {
-  const ctx=dom(read('site/index.html'),{platform,ua,reducedMotion});
+async function website(platform,ua,reducedMotion=false,touches=0) {
+  const ctx=dom(read('site/index.html'),{platform,ua,reducedMotion,touches});
+  const mobile=/Android|iPhone|iPad|iPod/i.test(platform+' '+ua) || (/Mac/i.test(platform) && touches>1);
   // Synchronous clock steps + microtask drains avoid the host timer latency
   // of tickAsync for every 50 ms polling timer in a full 65-app cycle.
   const advance=async ms=>{for(let elapsed=0;elapsed<ms;elapsed+=50){ctx.clock.tick(50);await Promise.resolve();await Promise.resolve();}};
@@ -170,11 +179,15 @@ async function website(platform,ua,reducedMotion=false) {
   assert(!ctx.d.querySelector('#tag').textContent.includes('dictation demo'));
   assert(!ctx.d.querySelector('#osHint'));
   assert(!ctx.d.body.textContent.includes('Windows 10 or 11'));
-  assert(ctx.d.querySelector('#osIcon').children.length);
+  if(mobile) {
+    assert.equal(ctx.d.querySelector('#download').textContent.trim(),'GitHub');
+    assert.equal(ctx.d.querySelector('#download').href,'https://github.com/Ijtihed/flow-local');
+    assert(ctx.d.querySelector('#download img'));
+  } else assert(ctx.d.querySelector('#osIcon').children.length);
   assert.equal(ctx.d.querySelector('.lede').textContent,'Speak naturally. Flow does the typing.');
   if(platform==='Linux x86_64') {assert(ctx.d.querySelector('#download').href.endsWith('Flow-x86_64.AppImage'));assert.equal(ctx.d.querySelector('#osKey').getAttribute('aria-label'),'Super key');}
   if(platform==='Win32') assert(ctx.d.querySelector('#download').href.endsWith('FlowSetup.exe'));
-  if(platform==='MacIntel') assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
+  if(platform==='MacIntel' && !mobile) assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
   const seen=new Set(), order=[];
   let recordingInputHeight,resultInputHeight,firstResultAt;
   const visibleResults = new Map();
@@ -203,4 +216,21 @@ async function website(platform,ua,reducedMotion=false) {
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));ctx.close();checks+=9;
   console.log(platform+' website: OS routing, Linear-first 3-app cycle, footer, continuous text, no demo controls PASS');
 }
-(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});
+async function modelSetup() {
+  const f=apiFixture('windows',true);
+  f.S.speech_models=[{id:'small',gb:.5,ready:false,supported:true,gpu_ok:false,ram_gb:2},
+                    {id:'large-v3',gb:3.1,ready:false,supported:false,gpu_ok:false,ram_gb:6}];
+  let downloaded;
+  f.api.setup_run=async(task,name)=>{downloaded={task,name};return true;};
+  f.api.setup_status=async()=>{f.S.speech_models[0].ready=true;return {task:null,error:null};};
+  const ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(50);
+  button(ctx,'Get started').click();input(ctx,'obName','Alex');button(ctx,'Continue').click();
+  assert(ctx.d.querySelector('#setupSpeech-model option[value="large-v3"]').disabled);
+  assert.equal(ctx.d.querySelector('#setupSpeech-model').value,'small');
+  button(ctx,'Continue').click();await ctx.clock.tickAsync(450);
+  assert.deepEqual(downloaded,{task:'model',name:'small'});
+  assert.equal(f.calls[0].model,'small');
+  assert(button(ctx,'Start using Flow'));
+  assert.equal(ctx.errors.length,0);ctx.close();checks+=6;
+}
+(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await modelSetup();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});

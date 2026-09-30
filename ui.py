@@ -82,8 +82,10 @@ class Api:
             s["api_key_saved"] = bool(speech_api.get_key())
         except Exception:
             s["api_key_saved"] = False
-        s["speech_models"] = [{"id": k, "gb": v, "ready": bool(setup_tasks.find_model(k))}
-                              for k, v in setup_tasks.MODEL_SIZE_GB.items()]
+        hardware = setup_tasks.hardware_models()
+        s['speech_models'] = hardware['models']
+        s['recommended_model'] = hardware['recommended_model']
+        s['free_vram_gb'], s['free_ram_gb'] = hardware['free_vram_gb'], hardware['free_ram_gb']
         s["ollama"] = setup_tasks.ollama_status()
         try:
             s["status"] = json.loads((paths.DATA / "status.json").read_text("utf-8"))
@@ -95,7 +97,7 @@ class Api:
             s["speech_error"] = err["message"] if time.time() - err["ts"] < 300 else ""
         except Exception:
             s["speech_error"] = ""
-        gpu = setup_tasks.nvidia_gpu()
+        gpu = hardware['gpu']
         s["gpu"] = gpu[0] if gpu else None
         s["cuda"] = setup_tasks.cuda_ready() if gpu else False
         return s
@@ -121,6 +123,7 @@ class Api:
             model = config.get("model", "large-v3")
             if model not in setup_tasks.MODEL_REPOS:
                 raise ValueError("Choose a supported local speech model.")
+            setup_tasks.validate_model(model)
             if paths.load_settings().get("onboarded") and not setup_tasks.find_model(model):
                 raise ValueError("Download this speech model before switching to it.")
             paths.save_settings({"speech_provider": "local", "model": model, "api_consent": False,
@@ -169,12 +172,21 @@ class Api:
 
     # ---- updates
     def _updates(self):
+        if 'updates' in control.state():
+            return updates.Remote()
         if not hasattr(self, "_updater"):
             self._updater = updates.Manager()
         return self._updater
 
     def update_status(self):
-        return self._updates().status()
+        state = self._updates().status()
+        if state.get('phase') == 'installing' and not getattr(self, '_update_closing', False):
+            self._update_closing = True
+            if hasattr(self, '_window'):
+                self._window.destroy()
+            if hasattr(self, '_server'):
+                __import__('threading').Thread(target=self._server.shutdown, daemon=True).start()
+        return state
 
     def check_updates(self):
         return self._updates().check()

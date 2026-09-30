@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -121,6 +122,14 @@ def download(asset, access, progress):
     folder.mkdir(parents=True, exist_ok=True)
     target = folder / asset['name']
     temporary = target.with_suffix('.partial')
+    if target.is_file() and target.stat().st_size == asset['size']:
+        cached = hashlib.sha256()
+        with target.open('rb') as stream:
+            for chunk in iter(lambda: stream.read(256 * 1024), b''):
+                cached.update(chunk)
+        if cached.hexdigest() == asset['sha256']:
+            progress(asset['size'], asset['size'])
+            return target
     digest, received = hashlib.sha256(), 0
     try:
         response = requests.get(API + f"/releases/assets/{asset['id']}", headers=headers(access, True),
@@ -284,7 +293,7 @@ class Manager:
                       latest=self.asset['version'] if self.asset else APP_VERSION, publisher=publisher(access))
         return self._start('checking', work)
 
-    def apply(self, on_install):
+    def apply(self, on_install, can_install=None):
         import control
         runtime = control.state()
         if runtime.get('recording') or runtime.get('busy'):
@@ -299,7 +308,61 @@ class Manager:
             if runtime.get('recording') or runtime.get('busy'):
                 self._set(phase='available', message='Download ready. Finish your dictation, then click Update again.')
                 return
-            install(file)
+            if can_install is not None and not can_install():
+                self._set(phase='available', message='Download ready. Flow will update when you finish using it.')
+                return
             self._set(phase='installing', progress=100)
+            install(file)
             on_install()
         return self._start('downloading', work)
+
+
+class Automatic:
+    """One scheduler in the tray process; windows share its status and commands."""
+    def __init__(self, manager, on_install, reserve):
+        self.manager, self.on_install, self.reserve = manager, on_install, reserve
+        self.next_check = time.monotonic() + 30
+        self.idle_since = time.monotonic()
+        self.previous = 'idle'
+
+    def tick(self, enabled, idle, now=None):
+        now = time.monotonic() if now is None else now
+        if not idle:
+            self.idle_since = now
+        phase = self.manager.status()['phase']
+        if phase != self.previous:
+            if phase == 'error':
+                self.next_check = now + 15 * 60
+            elif phase in ('available', 'current') and self.previous == 'checking':
+                self.next_check = now + 6 * 60 * 60
+            self.previous = phase
+        if not enabled:
+            self.idle_since = now
+            return
+        if phase == 'available' and idle and now - self.idle_since >= 60:
+            self.manager.apply(self.on_install, can_install=lambda: self.reserve(True))
+        elif phase not in ('checking', 'downloading', 'installing', 'available') and now >= self.next_check:
+            self.next_check = now + 6 * 60 * 60
+            self.manager.check()
+
+
+class Remote:
+    """Keep manual and automatic requests on the same tray-owned updater."""
+    def status(self):
+        import control
+        return control.state().get('updates', {'phase': 'idle', 'current': APP_VERSION, 'publisher': False})
+
+    def check(self):
+        import control
+        control.send('update_check')
+        return True
+
+    def apply(self, on_install):
+        import control
+        runtime = control.state()
+        if runtime.get('recording') or runtime.get('busy'):
+            raise UpdateError('Finish your current dictation before updating Flow.')
+        if self.status().get('phase') != 'available':
+            raise UpdateError('Check for an available update first.')
+        control.send('update_install')
+        return True

@@ -204,12 +204,17 @@ class Engine:
 
     # ------------------------------------------------------------ models
 
-    def load(self, model_path):
+    def load(self, model_path, model_name=None):
         add_cuda_dlls()
         import ctranslate2
         import setup_tasks
         from faster_whisper import WhisperModel
         cuda = ctranslate2.get_cuda_device_count() > 0 and setup_tasks.cuda_ready()
+        if cuda and model_name in setup_tasks.MODEL_VRAM_GB:
+            free = setup_tasks.available_vram()
+            gpu = setup_tasks.nvidia_gpu()
+            budget = free if free is not None else (gpu[1] if gpu else 0)
+            cuda = budget >= setup_tasks.MODEL_VRAM_GB[model_name]
         self.device = "cuda" if cuda else "cpu"
         self.whisper = None
         try:

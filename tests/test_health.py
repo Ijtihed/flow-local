@@ -94,7 +94,7 @@ class SpeechHealth(unittest.TestCase):
         settings={**self.settings,'onboarded':True,'languages':['en'],'cleanup':False}
         with patch('flow.load_settings',return_value=settings),patch('setup_tasks.find_model',return_value='fixture-model'),patch('setup_tasks.nvidia_gpu',return_value=None),patch('health.check',return_value={'status':'failed'}),patch('health.save'):
             f.load_model()
-        self.engine.load.assert_called_once_with('fixture-model')
+        self.engine.load.assert_called_once_with('fixture-model', model_name='small')
         messages=[call.args[0] for call in f.events.put.call_args_list]
         self.assertIn('ready',messages);self.assertIn('health_warning',messages)
         self.assertFalse(f.loading)

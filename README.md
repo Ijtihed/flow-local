@@ -10,7 +10,7 @@ Free voice dictation for Windows and Linux. Hold a key, talk, let go, and your w
 
 The repository and downloads are private until the owner chooses to publish them. Sign into GitHub with an account that has repository access to download.
 
-Setup detects your OS and offers a speech engine and model choice. Local options are Whisper small (0.5 GB), large-v3-turbo (1.6 GB) and large-v3 (3.1 GB). Flow recommends a model for your hardware; GPU acceleration and cleanup are optional downloads. On-device dictation works offline after setup. The first-use tutorial asks you to record a short sentence with your selected speech engine. It shows what Flow heard and accepts the step only when the phrase matches. Retry or change speech options if needed. Practice recordings stop after 15 seconds and are not saved in history. Replay the practice in Settings.
+Setup asks for your name, speech engine and model, then downloads the selected model before you start. Local downloads are Whisper small (0.5 GB), large-v3-turbo (1.6 GB) and large-v3 (3.1 GB). Recommendations use available RAM and NVIDIA VRAM, with conservative runtime budgets rather than download sizes. Models that exceed available RAM are disabled. Models that cannot fit GPU memory can run on the CPU if RAM allows; API speech is another option. Unknown memory is marked unverified, and GPU failures still fall back to CPU. GPU acceleration and cleanup are optional downloads. On-device dictation works offline after setup. The first-use tutorial asks you to record a short sentence with your selected speech engine and accepts it only when the phrase matches. Practice recordings stop after 15 seconds and are not saved in history. Replay the practice in Settings.
 
 ### Optional API speech
 
@@ -49,7 +49,7 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 - Tap `Space` while holding for hands free. Press the shortcut again to finish.
 - `Esc` cancels.
 - Click the tray icon to start or stop hands-free dictation. Use its Open Flow menu item for history, dictionary and settings.
-- The floating pill shows Recording, live microphone levels and elapsed time. Thinking and Polishing animate while Flow processes your words; after 12 seconds it says Still working. The Home screen's Record button saves a thought to Recent, where you can copy or edit it.
+- The floating pill shows Recording, live microphone levels and elapsed time. Thinking and Polishing animate while Flow processes your words; after 12 seconds it says Still working.
 
 ## What it does
 
@@ -67,7 +67,7 @@ An NVIDIA GPU accelerates local speech. Flow also runs on the CPU and falls back
 
 ## App updates
 
-In Settings → Updates, click **Check for updates**, then **Update** when a new version is ready. Flow downloads the Windows installer or Linux AppImage from GitHub, verifies its SHA-256 digest and restarts. Settings, names, history, dictionaries, speech keys and downloaded models stay in the data folder. Updates wait until dictation has finished. Linux keeps the previous AppImage beside the new one; its location must be writable.
+Automatic updates are enabled by default. Flow checks in the background after startup and every six hours, downloads a newer release and installs after sixty seconds without dictation or processing. Offline checks retry after fifteen minutes. Disable **Automatic updates** in Settings to use **Check for updates → Update** yourself. Flow verifies the SHA-256 digest and restarts. Settings, names, history, dictionaries, speech keys and downloaded models stay in the data folder. Linux keeps the previous AppImage beside the new one; its location must be writable. Windows installers are currently unsigned.
 
 The repository is currently private. Use your own GitHub token with **Contents: read** access under **GitHub access**, or an existing GitHub CLI sign-in. Tokens are protected by Windows DPAPI or a mode-0600 file on Linux, kept separately from speech keys and sent only to GitHub's API. Public releases work without a token if the owner later makes the repository public.
 

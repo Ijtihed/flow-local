@@ -473,13 +473,15 @@ function renderSnippets() {
 
 // ---------------------------------------------------------------- settings
 function speechForm(id, config, models, recommended) {
-  const options = models.map(m => `<option value="${m.id}" ${config.model === m.id ? "selected" : ""}>${esc(m.id)} · ${m.gb} GB${m.id === recommended ? " · recommended" : ""}${m.ready ? " · downloaded" : ""}</option>`).join("");
+  const chosen = models.find(m => m.id === config.model);
+  const options = (!config.model ? '<option value="" selected disabled>Choose a model</option>' : '') + models.map(m => `<option value="${m.id}" ${config.model === m.id ? "selected" : ""} ${m.supported === false ? 'disabled' : ''}>${esc(m.id)} · ${m.gb} GB download${m.id === recommended ? " · recommended" : ""}${m.supported === false ? ' · needs more RAM' : m.gpu_ok === false ? ' · CPU' : ''}${m.ready ? " · downloaded" : ""}</option>`).join("");
+  const memory = chosen?.ram_gb ? `About ${chosen.ram_gb} GB free RAM${chosen.gpu_ok ? ` and ${chosen.vram_gb} GB VRAM` : ' · CPU inference'}. ${S.free_ram_gb != null ? `${S.free_ram_gb} GB RAM available.` : 'Available RAM could not be measured.'} ${S.free_vram_gb != null ? `${S.free_vram_gb} GB VRAM available.` : ''}` : 'Small uses less memory. Turbo balances speed and accuracy. Large-v3 gives the strongest local recognition.';
   const standard = ["gpt-transcribe", "gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper-1"];
   const apiOptions = [...standard, ...(!standard.includes(config.apiModel) ? [config.apiModel] : [])];
   return `<div class="speech-form" id="${id}"><div class="speech-choices" role="group" aria-label="Speech engine">
     <button class="speech-choice ${config.provider === "local" ? "on" : ""}" data-provider="local" aria-pressed="${config.provider === "local"}">On-device<small>Works offline after download</small></button>
     <button class="speech-choice ${config.provider === "api" ? "on" : ""}" data-provider="api" aria-pressed="${config.provider === "api"}">API<small>Your provider transcribes audio</small></button></div>
-    ${config.provider === "local" ? `<label for="${id}-model">Speech model</label><select id="${id}-model">${options}</select><p class="form-status">Small uses less memory. Turbo balances speed and accuracy. Large-v3 gives the strongest local recognition.</p>`
+    ${config.provider === "local" ? `<label for="${id}-model">Speech model</label><select id="${id}-model">${options}</select><p class="form-status">${esc(memory)} ${chosen?.memory_known === false ? 'Memory estimates include headroom; GPU availability could not be fully checked.' : ''}</p>`
     : `<label for="${id}-api-model">API model</label><select id="${id}-api-model">${apiOptions.map(m => `<option ${m === config.apiModel ? "selected" : ""}>${esc(m)}</option>`).join("")}<option value="custom">Custom model…</option></select>
       <input class="field" id="${id}-custom" aria-label="Custom transcription model" placeholder="Your provider's transcription model ID" hidden>
       <label for="${id}-base">API base URL</label><input class="field" id="${id}-base" type="url" value="${esc(config.base)}" spellcheck="false">
@@ -492,7 +494,7 @@ function speechForm(id, config, models, recommended) {
 function bindSpeech(id, config, rerender) {
   const root = $("#" + id), get = suffix => $("#" + id + suffix);
   root.querySelectorAll("[data-provider]").forEach(b => b.onclick = () => { config.provider = b.dataset.provider; config.key = ""; config.consent = false; rerender(); });
-  if (config.provider === "local") get("-model").onchange = e => config.model = e.target.value;
+  if (config.provider === "local") get("-model").onchange = e => { config.model = e.target.value; rerender(); };
   else {
     get("-api-model").onchange = e => { get("-custom").hidden = e.target.value !== "custom"; config.apiModel = e.target.value === "custom" ? "" : e.target.value; };
     get("-custom").oninput = e => config.apiModel = e.target.value.trim();
@@ -510,6 +512,7 @@ async function applySpeech(id, config) {
       const models = (await api().system()).models;
       const chosen = models.find(m => m.id === config.model);
       if (!chosen) throw new Error("Choose a local speech model.");
+      if (chosen.supported === false) throw new Error('Not enough free RAM. Close other apps, choose a smaller model, or use API speech.');
       if (!chosen.ready) {
         status.textContent = `Downloading ${config.model}…`;
         if (!await api().setup_run("model", config.model)) throw new Error("Another download is running. Try again when it finishes.");
@@ -559,6 +562,7 @@ function renderSettings() {
       ${vn.enabled && vn.folder ? `<div class="under"><span class="path">${esc(vn.folder)}</span></div>` : ""}</div>
     ${section("Updates")}
     <div class="row"><div class="l"><b>Flow ${esc(S.version)}</b><small id="updateMessage" role="status">Check for the latest version.</small><progress class="update-progress" id="updateProgress" max="100" value="0" hidden></progress></div><button class="btn ghost" id="checkUpdates">Check for updates</button></div>
+    <div class="row"><div class="l"><b>Automatic updates</b><small>Download and install when Flow is idle. Your data stays here.</small></div><button class="switch ${S.auto_update !== false ? 'on' : ''}" data-toggle="auto_update" aria-label="Automatic updates"></button></div>
     <details class="update-access" id="updateAccess"><summary>GitHub access</summary><p>For private releases, connect your own GitHub token with Contents read access to Flow. An existing GitHub CLI sign-in also works.</p><div class="adder"><input class="field" id="updateToken" type="password" autocomplete="off" placeholder="GitHub access token" aria-label="GitHub access token"><button class="btn ghost" id="connectUpdates">Connect</button><button class="link" id="forgetUpdates">Forget token</button></div></details>
     <div id="publishUpdates" hidden><button class="link" id="publishUpdate">Publish update on GitHub</button><p class="note">Build and publish a new version with the Publish update workflow.</p></div>
     ${section("General")}
@@ -567,7 +571,7 @@ function renderSettings() {
     <div class="row"><div class="l"><b>History</b><small>${items.length} dictation${items.length === 1 ? "" : "s"} saved on this PC.</small></div><button class="danger ${confirmClear ? "confirm" : ""}" id="s-clear">${confirmClear ? "Click again to clear" : "Clear"}</button></div>`;
   layoutSegs();
   let config = speechConfig();
-  const drawEngine = () => { $("#engineForm").innerHTML = speechForm("settingsSpeech", config, S.speech_models || [], S.gpu ? "large-v3" : "small"); bindSpeech("settingsSpeech", config, drawEngine); };
+  const drawEngine = () => { $("#engineForm").innerHTML = speechForm("settingsSpeech", config, S.speech_models || [], S.recommended_model); bindSpeech("settingsSpeech", config, drawEngine); };
   drawEngine();
   $("#saveEngine").onclick = async e => { const b = e.currentTarget; b.disabled = true; b.textContent = "Preparing…"; $("#settingsSpeech").inert = true; if (await applySpeech("settingsSpeech", config)) { S = await api().settings(); render(); toast("Speech engine saved"); } else { $("#settingsSpeech").inert = false; b.disabled = false; b.textContent = "Use this engine"; } };
   if ($("#forgetKey")) $("#forgetKey").onclick = async () => { await api().forget_api_key(); S = await api().settings(); render(); toast("Key removed. Choose a local model to continue."); };
@@ -601,7 +605,7 @@ function drawUpdate(state) {
   $("#updateMessage").textContent = state.message || (state.phase === "current" ? "You're up to date." : state.phase === "available" ? `Version ${state.latest} is ready.` : state.phase === "checking" ? "Looking for a new version…" : state.phase === "downloading" ? `Downloading update · ${state.progress || 0}%` : state.phase === "installing" ? "Flow will restart after updating. Your data stays here." : "Check for the latest version.");
   progress.hidden = state.phase !== "downloading"; progress.value = state.progress || 0;
   $("#publishUpdates").hidden = !state.publisher;
-  if (state.phase === "error") $("#updateAccess").open = true;
+  if (state.phase === "error" && /private release|GitHub access/i.test(state.message || '')) $("#updateAccess").open = true;
 }
 async function pollUpdates() {
   if (view !== "settings") { clearInterval(updateTimer); return; }
@@ -653,7 +657,7 @@ function obRender() {
   } else if (ob.step === 2) {
     c.innerHTML = `<h1>Choose your engine</h1><p class="lede" style="margin-bottom:16px">Run speech on your device, or connect a transcription API. You can change this later.</p>
       ${speechForm("setupSpeech", ob.speech, sys.models || [], sys.recommended_model)}
-      ${ob.speech.provider === "local" && sys.gpu && !sys.cuda ? `<label class="consent"><input type="checkbox" id="obGpu" ${ob.gpu ? "checked" : ""}>Also download GPU acceleration for ${esc(sys.gpu[0])} (about 1.4 GB).</label>` : ""}
+      ${ob.speech.provider === "local" && sys.gpu && !sys.cuda && sys.models?.find(m => m.id === ob.speech.model)?.gpu_ok !== false ? `<label class="consent"><input type="checkbox" id="obGpu" ${ob.gpu ? "checked" : ""}>Also download GPU acceleration for ${esc(sys.gpu[0])} (about 1.4 GB).</label>` : ""}
       <div class="ob-foot">${dots}<button class="btn" id="obNext">Continue</button></div>`;
     bindSpeech("setupSpeech", ob.speech, obRender);
     if ($("#obGpu")) $("#obGpu").onchange = e => ob.gpu = e.target.checked;
@@ -684,7 +688,7 @@ async function obNext() {
     btn.disabled = true; btn.textContent = "Preparing…";
     $("#setupSpeech").inert = true;
     if (!await applySpeech("setupSpeech", ob.speech)) { $("#setupSpeech").inert = false; btn.disabled = false; btn.textContent = "Try again"; return; }
-    if (ob.speech.provider === "local" && ob.gpu && ob.sys.gpu && !ob.sys.cuda) {
+    if (ob.speech.provider === "local" && ob.gpu && ob.sys.gpu && !ob.sys.cuda && ob.sys.models?.find(m => m.id === ob.speech.model)?.gpu_ok !== false) {
       $("#setupSpeech-status").textContent = "Downloading GPU acceleration…";
       if (!await api().setup_run("cuda")) { $("#setupSpeech").inert = false; btn.disabled = false; btn.textContent = "Continue"; return; }
       const st = await new Promise(resolve => pollSetup(resolve, p => { $("#setupSpeech-status").textContent = p.total ? `GPU acceleration · ${Math.round(p.done / p.total * 100)}%` : "Starting GPU download…"; }));
@@ -852,13 +856,14 @@ async function init() {
   if (S.native_window) { document.body.classList.add("native"); $("#appChrome").hidden = false; }
   document.querySelectorAll("[data-window]").forEach(b => b.onclick = () => api().window_action(b.dataset.window));
   if (!S.onboarded) {
-    ob.sys = await api().system(); ob.name = S.name || ""; ob.langs = S.languages && S.languages.length ? S.languages : ["en"];
+    ob.sys = await api().system(); S.free_ram_gb = ob.sys.free_ram_gb; S.free_vram_gb = ob.sys.free_vram_gb; ob.name = S.name || ""; ob.langs = S.languages && S.languages.length ? S.languages : ["en"];
     ob.speech = speechConfig(); ob.speech.model = ob.sys.recommended_model; ob.speech.consent = false;
     $("#ob").hidden = false; obRender();
   }
   await boot();
   if (S.onboarded && S.tutorial_version !== 2) showTutorial();
   await refreshDiagnostics(); setInterval(refreshDiagnostics, 2500);
+  setInterval(() => api().update_status().catch(() => {}), 1000);
   setInterval(updateGreeting, 60000);
 }
 if (window.pywebview && window.pywebview.api && window.pywebview.api.settings) init();
