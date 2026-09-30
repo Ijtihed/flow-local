@@ -10,7 +10,7 @@ Free voice dictation for Windows and Linux. Hold a key, talk, let go, and your w
 
 The repository and downloads are private until the owner chooses to publish them. Sign into GitHub with an account that has repository access to download.
 
-Setup detects your OS and offers a speech engine and model choice. Local options are Whisper small (0.5 GB), large-v3-turbo (1.6 GB) and large-v3 (3.1 GB). Flow recommends a model for your hardware; GPU acceleration and cleanup are optional downloads. On-device dictation works offline after setup. A short animated tour explains the shortcut once, and can be replayed in Settings.
+Setup detects your OS and offers a speech engine and model choice. Local options are Whisper small (0.5 GB), large-v3-turbo (1.6 GB) and large-v3 (3.1 GB). Flow recommends a model for your hardware; GPU acceleration and cleanup are optional downloads. On-device dictation works offline after setup. The first-use tutorial asks you to record a short sentence with your selected speech engine. It shows what Flow heard and accepts the step only when the phrase matches. Retry or change speech options if needed. Practice recordings stop after 15 seconds and are not saved in history. Replay the practice in Settings.
 
 ### Optional API speech
 
@@ -49,6 +49,7 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 - Double tap `Ctrl` + `Win` (or tap `Space` while holding) for hands free. Press again to finish.
 - `Esc` cancels.
 - Click the tray icon to start or stop hands-free dictation. Use its Open Flow menu item for history, dictionary and settings.
+- The floating pill shows Recording, live microphone levels and elapsed time. Thinking and Polishing animate while Flow processes your words; after 12 seconds it says Still working. The Home screen's Record button saves a thought to Recent, where you can copy or edit it.
 
 ## What it does
 

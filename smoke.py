@@ -46,13 +46,17 @@ def run(headless=False):
     for app in CATALOG:
         assert (paths.APP / "assets/logos" / app["logo"]).is_file(), app["id"]
     import speech_api
+    import control
+    assert control.TUTORIAL_VERSION == 2
+    assert control.matches("I can speak instead of typing", control.PHRASES["en"])
     assert speech_api.validated_base("https://api.openai.com/v1") == "https://api.openai.com/v1"
     result = {"ok": True, "version": APP_VERSION, "app_catalog": len(CATALOG), "platform": "windows" if system.IS_WIN else "linux",
                       "gpu": system.nvidia_gpu() if not headless else "not inspected",
                       "cuda_libraries": system.cuda_ready() if not headless else "not inspected",
                       "audio_devices": len(sounddevice.query_devices()) if not headless else "not inspected",
                       "overlay": "rendered" if not headless else "not opened",
-                      "assets": "present", "speech_runtime": ctranslate2.__version__}
+                      "assets": "present", "speech_runtime": ctranslate2.__version__,
+                      "interactive_practice": "bundled", "recording_states": "recording, thinking, polishing"}
     if "--test-report" in __import__("sys").argv:
         args = __import__("sys").argv
         Path(args[args.index("--test-report") + 1]).write_text(json.dumps(result), "utf-8")

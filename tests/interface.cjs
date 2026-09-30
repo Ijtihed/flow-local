@@ -15,11 +15,23 @@ let checks=0;
 function apiFixture(platform='windows', fresh=false) {
   const S={...clone(base),platform,onboarded:!fresh};
   const calls=[];
+  const practice={phase:'ready',ready:true,matched:false,level:0,elapsed:0};
+  const recording={ready:true,recording:false,busy:false,phase:'idle',elapsed:0};
   const history=fresh ? [] : Array.from({length:12},(_,i)=>({ts:new Date(2026,8,30,9,i).toISOString(),text:'Please send the project notes.',app:i%2?'firefox':'telegram',words:5,seconds:2,lang:'en'}));
-  return {S,calls,api:{
+  return {S,calls,practice,recording,api:{
     settings:async()=>clone(S),memory:async()=>({terms:[],fixes:[],scanned:null}),stamp:async()=>1,history:async()=>clone(history),
     insights:async()=>({words:60,minutes_saved:1,wpm:150,apps:[['telegram',6],['firefox',6]],known:0,sessions:history.length,last_used:history[0]?.ts}),
     save_settings:async patch=>Object.assign(S,clone(patch)),
+    practice_open:async()=>({id:'a'.repeat(32),phrase:'I can speak instead of typing.',api:false}),
+    practice_status:async()=>clone(practice),
+    practice_start:async()=>Object.assign(practice,{phase:'recording',level:.7,elapsed:2,text:undefined}),
+    practice_stop:async()=>Object.assign(practice,{phase:'thinking',level:0,elapsed:1}),
+    practice_cancel:async()=>Object.assign(practice,{phase:'retry',matched:false,message:'Recording cancelled.'}),
+    practice_complete:async()=>{if(!practice.matched)throw new Error('Say the phrase first');Object.assign(S,{tutorial_seen:true,tutorial_version:2});return true},
+    recording_status:async()=>clone(recording),
+    record_start:async()=>Object.assign(recording,{recording:true,phase:'listening',elapsed:2}),
+    record_stop:async()=>Object.assign(recording,{recording:false,busy:true,phase:'transcribing',elapsed:1}),
+    record_cancel:async()=>{},
     system:async()=>({platform,gpu:null,cuda:false,recommended_model:'small',models:S.speech_models,vaults:[],name:'Alex'}),
     configure_speech:async config=>{calls.push(clone(config));S.speech_provider=config.provider;if(config.provider==='local')S.model=config.model;else S.api_model=config.model;S.api_consent=config.consent;S.api_key_saved=!!config.key},
     setup_run:async()=>{throw new Error('Unexpected download in interface test')},setup_status:async()=>({task:null,finished:[],error:null}),
@@ -47,11 +59,30 @@ async function ui(platform) {
   assert.equal(ctx.d.querySelectorAll('.brand').length,1);
   assert(!ctx.d.body.textContent.includes('Private, on this PC'));
   assert(ctx.d.querySelector('#platformLabel').textContent.startsWith(platform==='linux'?'Linux':'Windows'));
-  assert(ctx.d.querySelector('#tourStage').textContent.includes(platform==='linux'?'Super':'Win'));
+  assert(!ctx.d.querySelector('#skipTour'));
+  assert.equal(ctx.d.querySelector('#practicePhrase').textContent,'I can speak instead of typing.');
   await ctx.clock.tickAsync(4400);
-  assert.equal(ctx.d.querySelector('#tourStage').dataset.phase,'2');
-  button(ctx,"Let's go").click(); await ctx.clock.tickAsync(20);
+  assert(!f.S.tutorial_seen);
+  ctx.d.dispatchEvent(new ctx.w.KeyboardEvent('keydown',{key:'Escape'}));await ctx.clock.tickAsync(20);
+  assert(!ctx.d.querySelector('#tutorial').hidden);
+  ctx.d.querySelector('#practiceAction').click();await ctx.clock.tickAsync(250);
+  assert.equal(ctx.d.querySelector('#practiceMeter').dataset.state,'recording');
+  assert(parseFloat(ctx.d.querySelector('.practice-bars i').style.height)>4);
+  button(ctx,'Finish').click();await ctx.clock.tickAsync(250);
+  assert.equal(ctx.d.querySelector('#practiceState').textContent,'Thinking…');
+  assert(button(ctx,'Thinking…').disabled);
+  Object.assign(f.practice,{phase:'retry',matched:false,text:'This is a different sentence.',message:'Try again.'});await ctx.clock.tickAsync(250);
+  assert(!button(ctx,'Start using Flow'));
+  button(ctx,'Try again').click();await ctx.clock.tickAsync(250);button(ctx,'Finish').click();await ctx.clock.tickAsync(250);
+  Object.assign(f.practice,{phase:'passed',matched:true,text:'I can speak instead of typing.'});await ctx.clock.tickAsync(250);
+  assert(ctx.d.querySelector('#tourHint').textContent.includes(platform==='linux'?'Super':'Win'));
+  button(ctx,'Start using Flow').click();await ctx.clock.tickAsync(20);
   assert(f.S.tutorial_seen);assert.equal(ctx.d.querySelector('#tutorial').hidden,true);
+  ctx.d.querySelector('#recordButton').click();await ctx.clock.tickAsync(250);
+  assert.equal(ctx.d.querySelector('#recordButton').textContent,'Finish');
+  ctx.d.querySelector('#recordButton').click();await ctx.clock.tickAsync(250);
+  assert(ctx.d.querySelector('#recordCaption').textContent.includes('Thinking'));
+  Object.assign(f.recording,{recording:false,busy:false,phase:'idle'});await ctx.clock.tickAsync(250);
   assert.equal(ctx.d.querySelector('.app-name img').getAttribute('src'),'assets/logos/telegram.svg');
   assert.equal(ctx.d.querySelectorAll('.app-name img')[1].getAttribute('src'),'assets/logos/firefox.svg');
   change(ctx,'mood','relaxed');await ctx.clock.tickAsync(20);
@@ -95,9 +126,13 @@ async function website(platform,ua) {
   assert.equal(ctx.d.querySelector('#pause').textContent,'Pause');
   assert.equal(ctx.d.querySelector('.bar span').textContent,'Telegram');
   assert(!ctx.d.querySelector('#tag').textContent.includes('dictation demo'));
-  if(platform==='Linux x86_64') {assert.equal(ctx.d.querySelector('.cta a').id,'downloadLinux');assert.equal(ctx.d.querySelector('#osKey').textContent,'Super');}
-  if(platform==='Win32') assert(ctx.d.querySelector('#osHint').textContent.includes('Windows detected'));
-  if(platform==='MacIntel') assert(ctx.d.querySelector('#osHint').textContent.includes('supported computer'));
+  assert(!ctx.d.querySelector('#osHint'));
+  assert(!ctx.d.body.textContent.includes('Windows 10 or 11'));
+  assert(ctx.d.querySelector('#osIcon').children.length);
+  assert.equal(ctx.d.querySelector('.lede').textContent,'Speak naturally. Flow does the typing.');
+  if(platform==='Linux x86_64') {assert(ctx.d.querySelector('#download').href.endsWith('Flow-x86_64.AppImage'));assert.equal(ctx.d.querySelector('#osKey').getAttribute('aria-label'),'Super key');}
+  if(platform==='Win32') assert(ctx.d.querySelector('#download').href.endsWith('FlowSetup.exe'));
+  if(platform==='MacIntel') assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
   const seen=new Set();
   const catalog=JSON.parse(read('assets/apps.json'));
   assert.equal(ctx.d.querySelectorAll('#appPicker option').length,catalog.length);

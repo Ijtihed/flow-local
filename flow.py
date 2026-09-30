@@ -19,6 +19,7 @@ import numpy as np
 from PIL import Image
 
 import icons
+import control
 from apps import resolve_app, display_name
 import learn
 import paths
@@ -127,6 +128,12 @@ class Flow:
         self.hide_at = 0
         self.ui = None
         self.target_app = ("", "")
+        self.practice = None
+        self.compose_session = None
+        self.record_started = 0
+        self.state_started = time.time()
+        self._last_status = 0
+        self._last_error = ""
         self.icon_size = user32.GetSystemMetrics(49) if IS_WIN else 24
         self.light = light_taskbar()
 
@@ -218,6 +225,7 @@ class Flow:
                 self.engine.load(model)
         except Exception:
             self.loading = False
+            self._last_error = "Could not load the speech model. Choose another engine in Speech options."
             self.speech_signature = self._speech_signature(s)
             self.events.put(("error", "Could not load speech model. Open Settings and choose another model."))
             return
@@ -253,6 +261,7 @@ class Flow:
             self.flash("Check your microphone")
             return
         self.recording = True
+        self.record_started = time.time()
         self.keys.recording = True
         self.mode = mode
         self.set_state("listening")
@@ -270,22 +279,45 @@ class Flow:
         if self.recording:
             self._close_stream()
             self.set_state("idle")
+        if self.practice:
+            control.practice_result(self.practice["id"], phase="retry", matched=False,
+                                    message="Recording cancelled. Try the phrase again.")
+            self.practice = None
 
     def finish(self):
         self._close_stream()
         audio = np.concatenate(self.chunks) if self.chunks else np.zeros(0, np.float32)
         if len(audio) < RATE * 0.4 or np.sqrt(np.mean(audio ** 2)) < 0.002:
+            if self.practice:
+                control.practice_result(self.practice["id"], phase="retry", matched=False,
+                                        message="No voice detected. Check your microphone and try again.")
+                self.practice = None
             self.flash("Didn't catch that")
             return
         self.busy = True
         self.set_state("transcribing")
+        if self.practice:
+            context = dict(self.practice)
+            control.practice_result(context["id"], phase="thinking", matched=False)
+            threading.Thread(target=self.process_practice, args=(audio, context), daemon=True).start()
+            return
         threading.Thread(target=self.process, args=(audio,), daemon=True).start()
+
+    def process_practice(self, audio, context):
+        """Use the selected real engine, without learning, history, notes or pasting."""
+        try:
+            settings = {**self.settings, "languages": [context["language"]]}
+            text, _ = self.engine.transcribe(audio, settings)
+            self.events.put(("practice_done", context["id"], text))
+        except Exception:
+            self.events.put(("practice_error", context["id"], "Could not transcribe. Check your speech engine and try again."))
 
     def process(self, audio):
         t0 = time.time()
         try:
             text, lang = self.engine.transcribe(audio, self.settings)
             if text:
+                self.events.put(("stage", "polishing"))
                 text = self.engine.cleanup(text, self.settings)
                 self.memory.learn_dictation(text, lang)
                 text = self.engine.finish(text, self.settings, self.target_app)
@@ -313,6 +345,7 @@ class Flow:
             self.root.after(600, restore)
         elif not pasted:
             self.flash("Copied. Press Ctrl+V to paste")
+        return pasted
 
     def save(self, text, seconds, lang, latency):
         entry = {"ts": datetime.now().isoformat(timespec="seconds"), "text": text, "seconds": round(seconds, 2),
@@ -328,6 +361,10 @@ class Flow:
     # ------------------------------------------------------------ shortcut state machine
 
     def on_key(self, ev):
+        if self.practice or (self.recording and self.mode == "compose"):
+            if ev == "cancel":
+                self.cancel()
+            return
         now = time.time()
         if not self.ready or self.busy:
             return
@@ -355,6 +392,8 @@ class Flow:
             self.cancel()
 
     def on_tray(self):
+        if self.practice:
+            return
         if not self.ready or self.busy:
             return
         if self.recording:
@@ -365,6 +404,8 @@ class Flow:
     # ------------------------------------------------------------ ui
 
     def set_state(self, state, message=""):
+        if state != self.state:
+            self.state_started = time.time()
         if state != "idle" and self.state == "idle":
             self.appear = 0.0
         self.state, self.message = state, message
@@ -383,6 +424,11 @@ class Flow:
         self.ui = subprocess.Popen(paths.launch_command("--window"))
 
     def tick(self):
+        for command in control.commands():
+            try:
+                self.handle_control(command)
+            except (ValueError, TypeError, KeyError):
+                pass  # Reject malformed local commands without stopping the recorder.
         while not self.events.empty():
             ev = self.events.get()
             if ev in ("down", "up", "lock", "cancel", "interrupt"):
@@ -395,18 +441,41 @@ class Flow:
                 return self.quit()
             elif ev == "ready":
                 self.ready = True
+                self._last_error = ""
                 self.root.after(3000, pin_tray_icon)
                 self.set_tray("idle")
                 self.tray.title = "Flow · hold " + self.settings["shortcut"].title().replace("+", " + ") + " to dictate"
+            elif ev[0] == "stage":
+                if self.busy:
+                    self.set_state(ev[1])
+            elif ev[0] in ("practice_done", "practice_error"):
+                self.busy = False
+                if self.practice and self.practice["id"] == ev[1]:
+                    if ev[0] == "practice_done":
+                        text = ev[2] or ""
+                        matched = control.matches(text, self.practice["phrase"])
+                        control.practice_result(ev[1], phase="passed" if matched else "retry", matched=matched,
+                                                text=text[:500], message="You did it." if matched else "That was a little different. Say the phrase above and try again.")
+                        self.flash("Nice. You did it." if matched else "Try that once more")
+                    else:
+                        control.practice_result(ev[1], phase="retry", matched=False, message=ev[2])
+                        self.flash("Check speech settings")
+                    self.practice = None
+                else:
+                    self.set_state("idle")
             elif ev[0] == "done":
                 self.busy = False
                 _, text, seconds, lang, latency = ev
                 if text:
-                    self.set_state("idle")
-                    self.paste(text)
-                    if self.settings.get("learn", True):
+                    pasted = False
+                    if self.mode != "compose":
+                        self.set_state("typing")
+                        pasted = self.paste(text)
+                    if self.settings.get("learn", True) and self.mode != "compose":
                         learn.watch(text, self.memory, lambda pairs: self.events.put(("learned", pairs)))
                     self.save(text, seconds, lang, latency)
+                    if self.mode == "compose" or pasted:
+                        self.flash("Saved to Recent" if self.mode == "compose" else "Typed")
                 else:
                     self.flash("Didn't catch that")
             elif ev[0] == "learned":
@@ -418,6 +487,13 @@ class Flow:
                 print("error:", ev[1])
 
         now = time.time()
+        if self.practice and self.recording:
+            if not control.lease_alive(self.practice["id"]):
+                self.cancel()
+            elif now - self.record_started >= 15:
+                self.finish()
+        elif self.recording and self.mode == "compose" and not control.lease_alive(self.compose_session):
+            self.cancel()
         if self.tap_pending and now - self.tap_pending > DOUBLE_TAP:
             self.cancel()                                   # a lone quick tap: nothing to dictate
         if int(self.t * 30) % 30 == 0:
@@ -431,11 +507,55 @@ class Flow:
         if self.state != "idle":
             self.appear = min(1.0, self.appear + 0.12)
             locked = self.recording and self.mode == "hands"
-            self.pill.render(self.state, self.t, self.levels, self.message, self.appear, locked)
+            elapsed = now - (self.record_started if self.recording else self.state_started)
+            self.pill.render(self.state, self.t, self.levels, self.message, self.appear, locked, elapsed)
             self.pill.show()
         else:
             self.pill.hide()
+        if now - self._last_status > .2:
+            self._last_status = now
+            try:
+                control.publish({"phase": self.state if self.ready else "error" if self._last_error else "loading", "ready": self.ready,
+                                 "recording": self.recording, "busy": self.busy,
+                                 "level": min(1, (self.level * 14) ** .8) if self.recording else 0,
+                                 "elapsed": round(max(0, now - (self.record_started if self.recording else self.state_started)), 1),
+                                 "practice_id": self.practice["id"] if self.practice else None, "error": self._last_error})
+            except OSError:
+                pass  # A transient file lock must not stop the microphone/overlay loop.
         self.root.after(33, self.tick)
+
+    def handle_control(self, command):
+        action, args = command.get("action"), command.get("args") or {}
+        if action == "practice_start":
+            ident = control.valid_session(args.get("id"))
+            lang = args.get("language")
+            if lang not in control.PHRASES or args.get("phrase") != control.PHRASES.get(lang) or not self.ready or self.busy or self.recording:
+                control.practice_result(ident, phase="retry", matched=False, message="Flow isn't ready yet. Try again in a moment.")
+                return
+            self.practice = {"id": ident, "phrase": args["phrase"], "language": lang}
+            self.start("practice")
+            control.practice_result(ident, phase="recording" if self.recording else "retry", matched=False,
+                                    message="" if self.recording else "Can't use the microphone. Check microphone access and try again.")
+            if not self.recording:
+                self.practice = None
+        elif action in ("practice_stop", "practice_cancel"):
+            if self.practice and args.get("id") == self.practice["id"]:
+                if action == "practice_cancel":
+                    self.cancel()
+                elif self.recording:
+                    self.finish()
+            elif action == "practice_cancel" and not self.practice:
+                control.clear_practice(control.valid_session(args.get("id")))
+        elif action == "record_start":
+            if self.ready and not self.busy and not self.recording and not self.practice:
+                self.compose_session = control.valid_session(args.get("id"))
+                self.start("compose")
+        elif action == "record_stop":
+            if self.recording and self.mode == "compose" and args.get("id") == self.compose_session:
+                self.finish()
+        elif action == "record_cancel":
+            if self.recording and self.mode == "compose" and args.get("id") == self.compose_session:
+                self.cancel()
 
     def quit(self):
         self.loading = False

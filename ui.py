@@ -14,6 +14,7 @@ import setup_tasks
 import vault
 import voicenotes
 import speech_api
+import control
 from memory import Memory
 from paths import HISTORY, MEMORY
 
@@ -98,6 +99,8 @@ class Api:
         return s
 
     def save_settings(self, patch):
+        if any(k in patch for k in ("tutorial_seen", "tutorial_version")):
+            raise ValueError("Complete the spoken practice to finish the tutorial.")
         if any(k in patch for k in ("speech_provider", "model", "api_base", "api_model", "api_consent", "api_key")):
             raise ValueError("Use the speech engine form to change models or API settings.")
         if "mood" in patch and patch["mood"] not in ("auto", "focused", "relaxed", "low-energy"):
@@ -216,6 +219,96 @@ class Api:
         return vn
 
     # ---- first-run setup
+    def _ensure_tray(self):
+        if control.state().get("alive"):
+            return
+        import subprocess
+        if not getattr(self, "_tray_launch", None) or self._tray_launch.poll() is not None:
+            options = {"creationflags": subprocess.CREATE_NO_WINDOW} if IS_WIN else {"start_new_session": True}
+            self._tray_launch = subprocess.Popen(paths.launch_command(), **options)
+
+    def recording_status(self):
+        if getattr(self, "_compose_id", None):
+            control.lease(self._compose_id)
+        return control.state()
+
+    def record_start(self):
+        self._ensure_tray()
+        s = control.state()
+        if not s.get("ready") or s.get("recording") or s.get("busy"):
+            raise ValueError("Wait for Flow to be ready before recording.")
+        self._compose_id = __import__("uuid").uuid4().hex
+        control.lease(self._compose_id)
+        control.send("record_start", id=self._compose_id)
+        return True
+
+    def record_stop(self):
+        control.send("record_stop", id=getattr(self, "_compose_id", None))
+        return True
+
+    def record_cancel(self):
+        control.send("record_cancel", id=getattr(self, "_compose_id", None))
+        return True
+
+    def practice_open(self):
+        self._ensure_tray()
+        import uuid
+        if getattr(self, "_practice", None):
+            control.send("practice_cancel", id=self._practice["id"])
+        lang, phrase = control.phrase_for(paths.load_settings())
+        self._practice = {"id": uuid.uuid4().hex, "language": lang, "phrase": phrase}
+        control.lease(self._practice["id"])
+        s = paths.load_settings()
+        return {**self._practice, "api": s.get("speech_provider") == "api",
+                "provider": __import__("urllib.parse", fromlist=["urlsplit"]).urlsplit(s.get("api_base", "")).hostname}
+
+    def practice_start(self):
+        if not getattr(self, "_practice", None):
+            raise ValueError("Open the spoken practice first.")
+        s = control.state()
+        if not s.get("ready") or s.get("busy") or s.get("recording"):
+            raise ValueError("Flow is still getting ready. Try again in a moment.")
+        control.clear_practice(self._practice["id"])
+        control.lease(self._practice["id"])
+        control.practice_result(self._practice["id"], phase="starting", matched=False)
+        control.send("practice_start", **self._practice)
+        return True
+
+    def practice_stop(self):
+        if getattr(self, "_practice", None):
+            control.practice_result(self._practice["id"], phase="thinking", matched=False)
+            control.send("practice_stop", id=self._practice["id"])
+        return True
+
+    def practice_cancel(self):
+        if getattr(self, "_practice", None):
+            control.send("practice_cancel", id=self._practice["id"])
+        return True
+
+    def practice_status(self):
+        if not getattr(self, "_practice", None):
+            raise ValueError("Open the spoken practice first.")
+        ident = self._practice["id"]
+        if __import__("time").time() - getattr(self, "_lease_time", 0) > 1:
+            control.lease(ident)
+            self._lease_time = __import__("time").time()
+        runtime = control.state()
+        result = control.result(ident)
+        return {**runtime, **result, "phrase": self._practice["phrase"],
+                "message": result.get("message") or runtime.get("error", ""),
+                "phase": result.get("phase", "error" if runtime.get("error") and not runtime.get("ready") else "ready" if runtime.get("ready") and not runtime.get("busy") and not runtime.get("recording") else "loading")}
+
+    def practice_complete(self):
+        if not getattr(self, "_practice", None):
+            raise ValueError("Complete the spoken practice first.")
+        result = control.result(self._practice["id"])
+        if result.get("matched") is not True or not control.matches(result.get("text", ""), self._practice["phrase"]):
+            raise ValueError("Say the practice phrase before continuing.")
+        paths.save_settings({"tutorial_seen": True, "tutorial_version": control.TUTORIAL_VERSION})
+        control.clear_practice(self._practice["id"])
+        self._practice = None
+        return True
+
     def system(self):
         return setup_tasks.system_info()
 

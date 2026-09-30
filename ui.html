@@ -195,28 +195,39 @@
   .form-status { color: var(--ink-2); font-size: 12.5px; margin: 10px 0; }
   .shortcut-example { background: #F3F3F1; border-radius: 14px; padding: 16px 20px; margin: -18px 0 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; }
   .shortcut-example b { font-weight: 500; }
-  .tutorial { position: fixed; inset: 0; background: #f7f7f5f5; z-index: 80; display: grid; place-items: center; padding: 30px; }
-  .tour-card { width: min(520px, 100%); background: white; border: 1px solid var(--line); border-radius: 24px; padding: 30px; box-shadow: 0 28px 90px #14141418; animation: tour-in .45s var(--ease); }
-  .tour-card h1 { font-size: 32px; }
+  .tutorial { position: fixed; inset: 0; background: #f7f7f5f5; backdrop-filter: blur(12px); z-index: 80; display: grid; place-items: center; padding: 24px; overflow: auto; }
+  .tour-card { width: min(560px, 100%); background: white; border: 1px solid #e8e8eb; border-radius: 28px; padding: 32px; box-shadow: 0 24px 80px #14141412; animation: tour-in .4s var(--ease); }
+  .tour-card h1 { font-size: 34px; letter-spacing: -.035em; }
   .tour-card p { color: var(--ink-2); font-size: 14px; }
-  .tour-stage { height: 200px; border-radius: 16px; background: #F7F7F5; padding: 26px; margin: 24px 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; position: relative; }
-  .tour-keys { display: flex; gap: 6px; }
-  .tour-keys kbd { padding: 9px 14px; font-size: 15px; transition: transform .3s; }
-  .tour-stage[data-phase="0"] kbd { animation: tour-press 2s ease infinite; }
-  .tour-wave { display: flex; height: 38px; align-items: center; gap: 5px; padding: 0 14px; background: white; border-radius: 30px; box-shadow: 0 5px 18px #14141416; transition: opacity .3s, transform .3s; }
-  .tour-wave img { width: 24px; height: 24px; margin-right: 7px; }
-  .tour-wave i { width: 3px; height: 5px; background: #141414; border-radius: 3px; }
-  .tour-stage[data-phase="1"] .tour-wave i { animation: tour-wave .5s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.12s); }
-  .tour-stage[data-phase="2"] .tour-wave { opacity: 0; transform: scale(.9); }
-  .tour-output { position: absolute; bottom: 28px; font-size: 19px; color: #141414; opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; }
-  .tour-stage[data-phase="2"] .tour-output { opacity: 1; transform: none; }
-  .tour-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .practice-steps { display: flex; gap: 18px; padding: 0; list-style: none; color: var(--ink-3); font-size: 12px; margin: 24px 0; }
+  .practice-steps li.on { color: #141414; }
+  .practice-steps li.done { color: #27864b; }
+  .practice-phrase { border-radius: 18px; background: #f5f5f7; padding: 24px; margin-bottom: 18px; }
+  .practice-phrase small { display: block; color: var(--ink-2); font-size: 11px; margin-bottom: 12px; }
+  .practice-phrase blockquote { margin: 0; font-size: 25px; font-weight: 500; line-height: 1.35; letter-spacing: -.02em; }
+  .practice-meter { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+  .practice-meter img { width: 24px; height: 24px; }
+  .practice-bars { display: flex; align-items: center; gap: 4px; height: 32px; }
+  .practice-bars i { display: block; width: 3px; height: 4px; border-radius: 3px; background: #141414; transition: height .15s ease; }
+  .practice-meter[data-state="thinking"] .practice-bars i { animation: tour-wave .65s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.1s); }
+  .practice-meter[data-state="passed"] .practice-bars { display: none; }
+  .practice-meter b { font-size: 13px; font-weight: 500; }
+  .practice-meter time { margin-left: auto; color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .practice-output { min-height: 65px; border-top: 1px solid var(--line); margin-top: 16px; padding: 15px 0; }
+  .practice-output small { display: block; font-size: 11px; color: var(--ink-3); margin-bottom: 6px; }
+  .practice-output p { color: #141414; margin: 0; font-size: 17px; }
+  .tour-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
+  .tour-foot .btn { min-width: 150px; }
+  .practice-note { font-size: 11px !important; margin: 12px 0 0; line-height: 1.45; }
+  .record-row { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; }
+  .record-row span { font-size: 12px; color: var(--ink-2); }
+  .record-row button.active { background: #b92436; }
   @keyframes tour-in { from { opacity: 0; transform: translateY(16px) scale(.96); } }
   @keyframes tour-press { 25%,65% { transform: translateY(3px); background: #F3F3F1; } }
   @keyframes tour-wave { to { height: 24px; } }
   button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid #141414; outline-offset: 3px; }
   @media (prefers-reduced-motion: reduce) { *, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
-  @media (max-height: 650px) { .ob { align-items: flex-start; overflow-y: auto; padding: 42px 0; } .ob-foot { margin-top: 20px; } .tour-stage { height: 150px; margin: 16px 0; } }
+  @media (max-height: 650px) { .ob { align-items: flex-start; overflow-y: auto; padding: 42px 0; } .ob-foot { margin-top: 20px; } #tutorial { align-items: flex-start; padding: 18px; } .tour-card { padding: 24px; } }
   mark { background: #FFF1A8; color: inherit; border-radius: 2px; }
   @media (max-width: 820px) { aside { width: 64px; } .brand b, .nav span, .side-foot { display: none; } .stats { grid-template-columns: repeat(2, 1fr); } .stat:nth-child(3) { border-left: 0; padding-left: 0; } .wrap { padding: 36px 24px 60px; } }
 </style>
@@ -344,6 +355,7 @@ function renderHome() {
   const top = I.apps[0] ? I.apps[0][1] : 1;
   let html = `<h1 id="greeting">${esc(g.title)}${first ? `, <em>${esc(first)}</em>` : ""}</h1>
     <p class="lede">Hold ${kbd(S.shortcut)} and talk. Let go, and it's typed.</p>
+    <div class="record-row"><button class="btn" id="recordButton" disabled>Record</button><span id="recordCaption" role="status">Getting ready…</span></div>
     <div class="mood-line"><span id="greetingHint">${esc(g.hint)}</span><select id="mood" aria-label="Your mood">${[["auto", "Go with the day"], ["focused", "Focused"], ["relaxed", "Relaxed"], ["low-energy", "Low energy"]].map(([id,label]) => `<option value="${id}" ${S.mood === id ? "selected" : ""}>${label}</option>`).join("")}</select></div>
     <div class="stats">
       <div class="stat"><b data-to="${I.words}">0</b><span>words dictated</span></div>
@@ -375,6 +387,8 @@ function renderHome() {
   $("#view").innerHTML = html;
   if (!renderHome.animated) { document.querySelectorAll(".stat b").forEach(countUp); renderHome.animated = true; }
   else document.querySelectorAll(".stat b").forEach((b) => (b.textContent = (+b.dataset.to).toLocaleString()));
+  $("#recordButton").onclick = async e => { e.currentTarget.disabled = true; try { if (e.currentTarget.dataset.recording === "true") await api().record_stop(); else await api().record_start(); } catch (error) {toast(error.message || String(error));} await refreshRecording(); };
+  refreshRecording();
   const qi = $("#q");
   $("#mood").onchange = async (e) => { S.mood = e.target.value; greetingVisit++; await api().save_settings({mood: S.mood}); updateGreeting(); };
   qi.oninput = () => { query = qi.value; const pos = qi.selectionStart; renderHome(); const n = $("#q"); n.focus(); n.setSelectionRange(pos, pos); };
@@ -547,7 +561,7 @@ function renderSettings() {
     <div class="row col"><div class="l"><b>Voice notes</b><small>Every dictation goes into a daily note in your vault. The folder is kept out of git, so it stays on this PC.</small></div><button class="switch ${vn.enabled ? "on" : ""}" id="s-vn"></button>
       ${vn.enabled && vn.folder ? `<div class="under"><span class="path">${esc(vn.folder)}</span></div>` : ""}</div>
     ${section("General")}
-    <div class="row"><div class="l"><b>A quick tour</b><small>Hold, talk, let go. See it in a few seconds.</small></div><button class="btn ghost" id="replayTour">Show me</button></div>
+    <div class="row"><div class="l"><b>A quick tour</b><small>Say a sentence and watch it become text.</small></div><button class="btn ghost" id="replayTour">Show me</button></div>
     <div class="row"><div class="l"><b>Open at sign-in</b><small>Flow waits in the tray, ready when you are.</small></div><button class="switch ${S.startup ? "on" : ""}" data-toggle="startup"></button></div>
     <div class="row"><div class="l"><b>History</b><small>${items.length} dictation${items.length === 1 ? "" : "s"} saved on this PC.</small></div><button class="danger ${confirmClear ? "confirm" : ""}" id="s-clear">${confirmClear ? "Click again to clear" : "Clear"}</button></div>`;
   layoutSegs();
@@ -645,42 +659,100 @@ async function obNext() {
 }
 
 // ---------------------------------------------------------------- shell
-let tourTimer, tourPhase = 0, tourFocus;
-function showTutorial() {
-  clearTimeout(tourTimer); tourPhase = 0; tourFocus = document.activeElement;
+let tourTimer, tourFocus, tourData, tourState = "loading", tourPolling = false;
+async function showTutorial() {
+  clearInterval(tourTimer); tourFocus = document.activeElement; tourState = "loading";
   const modal = $("#tutorial"); modal.hidden = false;
   $("#scroll").inert = true; $("aside").inert = true;
-  modal.innerHTML = `<div class="tour-card"><h1 id="tourTitle">Hold your shortcut</h1><p id="tourHint">Your words go wherever your cursor is.</p>
-    <div class="tour-stage" id="tourStage" data-phase="0"><div class="tour-keys">${kbd(S.shortcut)}</div><div class="tour-wave"><img src="assets/logo.png" alt="">${Array.from({length:9}, (_,i) => `<i style="--i:${i}"></i>`).join("")}</div><div class="tour-output">Hey, I'll be there in ten 👋</div></div>
-    <div class="tour-foot"><button class="link" id="skipTour">Skip tour</button><div class="dots" id="tourDots"><i class="on"></i><i></i><i></i></div><button class="btn" id="nextTour">Next</button></div></div>`;
-  $("#skipTour").onclick = finishTutorial;
-  $("#nextTour").onclick = () => tourPhase < 2 ? setTourPhase(tourPhase + 1) : finishTutorial();
-  $("#nextTour").focus();
-  document.addEventListener("keydown", tourKeys);
-  setTourPhase(0);
+  modal.innerHTML = `<div class="tour-card"><h1 id="tourTitle">Your first dictation</h1><p id="tourHint">Click Record. Say this sentence. Then finish.</p>
+    <ol class="practice-steps"><li class="on">1 · Record</li><li>2 · Speak</li><li>3 · Done</li></ol>
+    <div class="practice-phrase"><small>Say this out loud</small><blockquote id="practicePhrase">Getting ready…</blockquote></div>
+    <div class="practice-meter" id="practiceMeter" data-state="loading"><img src="assets/logo.png" alt=""><b id="practiceState" role="status">Getting the speech engine ready…</b><div class="practice-bars">${Array.from({length:9}, (_,i) => `<i style="--i:${i}"></i>`).join("")}</div><time id="practiceTime"></time></div>
+    <div class="practice-output"><small>What Flow heard</small><p id="practiceOutput" aria-live="polite">Your words will appear here.</p></div>
+    <div class="tour-foot"><div><button class="link" id="practiceOptions">Speech options</button><button class="link" id="cancelPractice" hidden>Cancel recording</button></div><button class="btn" id="practiceAction" disabled>Record</button></div>
+    <div id="practiceOptionsPanel" hidden></div>
+    <p class="practice-note" id="practiceNote">Practice recordings stop after 15 seconds. They aren't added to your history.</p>
+    <p class="form-error" id="practiceError" role="alert" hidden></p></div>`;
+  document.removeEventListener("keydown", tourKeys); document.addEventListener("keydown", tourKeys);
+  $("#practiceAction").onclick = async () => {
+    const button = $("#practiceAction"); button.disabled = true;
+    try {
+      if (tourState === "passed") return await finishTutorial();
+      if (tourState === "recording") { tourState = "thinking"; await api().practice_stop(); }
+      else { tourState = "starting"; $("#practiceOutput").textContent = "Listening for your sentence…"; await api().practice_start(); }
+      await pollPractice();
+    } catch (error) { $("#practiceError").textContent = error.message || String(error); $("#practiceError").hidden = false; tourState = "retry"; button.disabled = false; button.textContent = "Try again"; }
+  };
+  $("#cancelPractice").onclick = async () => { await api().practice_cancel(); await pollPractice(); };
+  $("#practiceOptions").onclick = () => {
+    const panel = $("#practiceOptionsPanel"); panel.hidden = !panel.hidden; if (panel.hidden) return;
+    const config = speechConfig();
+    const draw = () => { panel.innerHTML = speechForm("practiceSpeech", config, S.speech_models || [], S.gpu && S.cuda ? "large-v3" : "small") + `<button class="btn" id="practiceSaveEngine">Use this engine</button>`;
+      bindSpeech("practiceSpeech", config, draw);
+      $("#practiceSaveEngine").onclick = async e => { const button = e.currentTarget; button.disabled = true; const applied = await applySpeech("practiceSpeech",config); if (applied) {panel.hidden = true; if (config.provider === "api") $("#practiceNote").textContent = "This practice sends your recording to the selected speech provider. Its data policy and API fees apply."; else $("#practiceNote").textContent = "Practice recordings stop after 15 seconds. They aren't added to your history.";} else button.disabled = false; };
+    }; draw();
+  };
+  try {
+    tourData = await api().practice_open();
+    $("#practicePhrase").textContent = tourData.phrase;
+    if (tourData.api) $("#practiceNote").textContent = `Your recording is sent to ${tourData.provider || "your speech provider"}. Its data policy and API fees apply. Practice stops after 15 seconds.`;
+    await pollPractice(); tourTimer = setInterval(pollPractice, 200);
+  } catch (error) { $("#practiceError").textContent = error.message || String(error); $("#practiceError").hidden = false; }
 }
 function tourKeys(e) {
-  if (e.key === "Escape") { e.preventDefault(); finishTutorial(); }
+  if (e.key === "Escape") { e.preventDefault(); if (tourState === "recording") api().practice_cancel(); return; }
   if (e.key === "Tab") {
-    const first = $("#skipTour"), last = $("#nextTour");
+    const controls = [...$("#tutorial").querySelectorAll("button")].filter(b => !b.hidden && !b.disabled);
+    if (!controls.length) { e.preventDefault(); return; }
+    const first = controls[0], last = controls.at(-1);
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 }
-function setTourPhase(phase) {
-  clearTimeout(tourTimer); tourPhase = phase;
-  $("#tourStage").dataset.phase = phase;
-  $("#tourTitle").textContent = ["Hold your shortcut", "Say what's on your mind", "Let go. It's typed."][phase];
-  $("#tourHint").textContent = ["Your words go wherever your cursor is.", "Talk naturally. Flow takes care of the typing.", "That's it. Try it in a chat, an email, anywhere."][phase];
-  $("#nextTour").textContent = phase === 2 ? "Let's go" : "Next";
-  $("#tourDots").querySelectorAll("i").forEach((dot,i) => dot.classList.toggle("on", i === phase));
-  if (phase < 2 && !matchMedia("(prefers-reduced-motion: reduce)").matches) tourTimer = setTimeout(() => setTourPhase(phase + 1), phase === 0 ? 1800 : 2400);
+async function pollPractice() {
+  if (tourPolling || $("#tutorial").hidden) return;
+  tourPolling = true;
+  try {
+    const status = await api().practice_status();
+    if ($("#tutorial").hidden) return;
+    tourState = status.phase;
+    const recording = status.phase === "recording", thinking = status.phase === "thinking", passed = status.phase === "passed" && status.matched;
+    $("#practiceMeter").dataset.state = status.phase;
+    $("#practiceState").textContent = recording ? "Recording" : thinking ? "Thinking…" : passed ? "✓ You did it" : status.phase === "loading" ? "Getting the speech engine ready…" : "Ready when you are";
+    $("#practiceTime").textContent = recording ? `${Math.floor(status.elapsed || 0)} / 15s` : thinking ? `${Math.floor(status.elapsed || 0)}s` : "";
+    document.querySelectorAll(".practice-bars i").forEach((bar,i) => { bar.style.height = (recording ? 4 + 24 * (status.level || 0) * (1 - Math.abs(i-4)/8) : 4) + "px"; });
+    $("#practiceAction").textContent = passed ? "Start using Flow" : recording ? "Finish" : thinking ? "Thinking…" : status.phase === "starting" ? "Starting…" : status.phase === "retry" ? "Try again" : "Record";
+    $("#practiceAction").disabled = !passed && (thinking || status.phase === "starting" || !status.ready || (!!status.busy && !recording) || status.phase === "loading");
+    $("#cancelPractice").hidden = !recording;
+    $("#practiceOptions").disabled = recording || thinking || status.phase === "starting";
+    $("#practiceError").hidden = !status.message || passed;
+    $("#practiceError").textContent = status.message || "";
+    if (status.text !== undefined) $("#practiceOutput").textContent = status.text || "No words detected.";
+    if (passed) $("#tourHint").innerHTML = `That's your voice, typed. Hold ${kbd(S.shortcut)} in any app to do it again.`;
+    document.querySelectorAll(".practice-steps li").forEach((item,i) => {item.classList.toggle("on", passed ? i === 2 : recording || thinking ? i === 1 : i === 0);item.classList.toggle("done", passed || (recording || thinking) && i === 0);});
+  } catch (error) { $("#practiceError").textContent = error.message || String(error); $("#practiceError").hidden = false; }
+  finally {tourPolling = false;}
 }
 async function finishTutorial() {
-  clearTimeout(tourTimer); document.removeEventListener("keydown", tourKeys);
+  await api().practice_complete();
+  clearInterval(tourTimer); document.removeEventListener("keydown", tourKeys);
   $("#tutorial").hidden = true; $("#scroll").inert = false; $("aside").inert = false;
-  S.tutorial_seen = true; await api().save_settings({tutorial_seen: true});
+  S.tutorial_seen = true; S.tutorial_version = 2;
   if (tourFocus && tourFocus.isConnected) tourFocus.focus();
+}
+window.addEventListener("pagehide", () => { if (!$("#tutorial").hidden) api().practice_cancel(); api().record_cancel(); });
+let recordingPolling = false;
+async function refreshRecording() {
+  if (recordingPolling || !$("#recordButton") || !$("#tutorial").hidden) return;
+  recordingPolling = true;
+  try {
+    const status = await api().recording_status();
+    const button = $("#recordButton"), caption = $("#recordCaption"); if (!button) return;
+    button.dataset.recording = String(status.recording); button.classList.toggle("active", !!status.recording);
+    button.textContent = status.recording ? "Finish" : status.busy ? "Thinking…" : "Record";
+    button.disabled = !status.ready || !!status.busy;
+    caption.textContent = status.recording ? `Recording · ${Math.floor(status.elapsed || 0)}s` : status.busy ? `${status.phase === "polishing" ? "Polishing" : "Thinking"} · ${Math.floor(status.elapsed || 0)}s` : "A thought for Recent.";
+  } catch (_) {} finally {recordingPolling = false;}
 }
 async function save(patch, msg = "Saved") { await api().save_settings(patch); S = await api().settings(); render(); toast(msg); }
 function render() {
@@ -729,7 +801,8 @@ async function init() {
     $("#ob").hidden = false; obRender();
   }
   await boot();
-  if (S.onboarded && !S.tutorial_seen) showTutorial();
+  if (S.onboarded && S.tutorial_version !== 2) showTutorial();
+  setInterval(refreshRecording, 250);
   setInterval(updateGreeting, 60000);
 }
 if (window.pywebview && window.pywebview.api && window.pywebview.api.settings) init();

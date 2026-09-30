@@ -51,15 +51,13 @@ class PillBase:
             self.shadows[key] = img.filter(ImageFilter.GaussianBlur(m / 2.4))
         return self.shadows[key]
 
-    def render(self, state, t, levels, message, appear, locked=False):
+    def render(self, state, t, levels, message, appear, locked=False, elapsed=0):
         k = self.s * self.SS
         text_w = 0
         if state == "message":
             text_w = self.font.getlength(message) / k
-        w_l = 156 if state != "message" else max(156, text_w + 72)
-        if locked:
-            w_l = 178  # room for the hands-free dot
-        h_l = 38
+        w_l = 278 if state != "message" else max(180, text_w + 86)
+        h_l = 48
         # Apple-ish entrance: grow from a narrow capsule
         e = 1 - (1 - appear) ** 3
         w_l = h_l + (w_l - h_l) * e
@@ -77,13 +75,14 @@ class PillBase:
             img.alpha_composite(mark, (int(M + 12 * k), int(cy - mark.height / 2)))
             cx += 14 * k
             if state == "listening":
-                n, gap, bw = 13, 6.2 * k, 2.6 * k
-                if locked:  # hands-free: pulsing red dot on the left, bars nudged right
-                    r = 3.6 * k * (0.85 + 0.15 * np.sin(t * 5))
-                    dx = M + 45 * k
-                    d.ellipse((dx - r, cy - r, dx + r, cy + r), fill=(255, 69, 88, a))
-                    cx += 9 * k
-                x0 = cx - (n - 1) * gap / 2
+                label_x = M + 45 * k
+                d.text((label_x, cy), "Recording", font=self.font, fill=(29,29,31,a), anchor="lm")
+                dx = label_x + self.font.getlength("Recording") + 8*k
+                r = 3*k
+                d.ellipse((dx-r,cy-r,dx+r,cy+r),fill=(239,68,68,a))
+                d.text((M+W-14*k,cy), f"{int(elapsed)//60}:{int(elapsed)%60:02d}", font=self.font, fill=(110,110,115,a), anchor="rm")
+                n, gap, bw = 11, 4.8 * k, 2.5 * k
+                x0 = M + 172*k - (n - 1) * gap / 2
                 for i in range(n):
                     lv = levels[-n + i] if len(levels) >= n else 0.0
                     env = 1 - abs(i - (n - 1) / 2) / ((n - 1) / 2) * 0.45
@@ -91,9 +90,14 @@ class PillBase:
                     x = x0 + i * gap
                     d.rounded_rectangle((x - bw / 2, cy - bh / 2, x + bw / 2, cy + bh / 2), bw / 2,
                                         fill=(22, 22, 24, a))
-            elif state == "transcribing":
-                n, gap, bw = 13, 6.2 * k, 2.6 * k
-                x0 = cx - (n - 1) * gap / 2
+            elif state in ("transcribing", "polishing", "typing"):
+                label = {"transcribing":"Thinking", "polishing":"Polishing", "typing":"Typing"}[state]
+                if state == "transcribing" and elapsed >= 12:
+                    label = "Still working"
+                d.text((M+45*k,cy), label, font=self.font, fill=(29,29,31,a), anchor="lm")
+                d.text((M+W-14*k,cy), f"{int(elapsed)}s",font=self.font,fill=(110,110,115,a),anchor="rm")
+                n, gap, bw = 3, 10 * k, 4 * k
+                x0 = M + 178*k - (n - 1) * gap / 2
                 for i in range(n):
                     wave = 0.5 + 0.5 * np.sin(t * 7 - i * 0.55)
                     bh = (3 + 5 * wave) * k
