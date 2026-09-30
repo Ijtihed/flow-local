@@ -407,6 +407,13 @@ class Api:
 
 def style_window(window):
     """Light title bar with Flow's own icon instead of Python's."""
+    # pywebview dispatches shown callbacks on a Python worker. WinForms icon
+    # setters send synchronous messages; touching them there can deadlock with
+    # the GUI thread while it focuses WebView2. Queue the entire operation.
+    from System import Action
+    if window.native.InvokeRequired:
+        window.native.BeginInvoke(Action(lambda: style_window(window)))
+        return
     try:
         hwnd = window.native.Handle.ToInt32()
         from System.Drawing import Icon
@@ -425,8 +432,26 @@ def style_window(window):
             if not h:
                 raise ctypes.WinError()
             user32.SendMessageW(hwnd, 0x80, which, h)  # WM_SETICON
+        window._flow_style_applied = True
     except Exception as e:
         print("style_window:", e)
+
+
+def create_window(api=None):
+    """Construct the real Windows window, shared with the packaged GUI check."""
+    import webview
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Flow.Dictation")
+    if not paths.FROZEN:
+        icons.ensure_app_ico(paths.ICON)
+    api = api if api is not None else Api()
+    win = webview.create_window("Flow", str(paths.APP / "ui.html"), js_api=api, width=1040, height=740,
+                                min_size=(720, 520), background_color="#FFFFFF", frameless=True,
+                                easy_drag=False)
+    api._window = win
+    webview.settings["DRAG_REGION_DIRECT_TARGET_ONLY"] = True
+    win.events.shown += lambda: style_window(win)
+    return win
 
 
 def main():
@@ -435,17 +460,7 @@ def main():
         serve(Api())
         return
     import webview
-    ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Flow.Dictation")
-    if not paths.FROZEN:
-        icons.ensure_app_ico(paths.ICON)
-    api = Api()
-    win = webview.create_window("Flow", str(paths.APP / "ui.html"), js_api=api, width=1040, height=740,
-                                min_size=(720, 520), background_color="#FFFFFF", frameless=True,
-                                easy_drag=False)
-    api._window = win
-    webview.settings["DRAG_REGION_DIRECT_TARGET_ONLY"] = True
-    win.events.shown += lambda: style_window(win)
+    create_window()
     webview.start()
 
 

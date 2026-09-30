@@ -36,12 +36,15 @@ jobs:
           .\build.ps1
           $flowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-headless','--test-report','windows-runtime.json' -WindowStyle Hidden -Wait -PassThru
           if ($flowTest.ExitCode -ne 0) { throw 'Packaged runtime failed' }
+          $windowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-window','--test-report','windows-window.json' -WindowStyle Hidden -Wait -PassThru
+          if ($windowTest.ExitCode -ne 0) { throw 'Packaged native window or tutorial failed' }
       - if: runner.os == 'Linux'
         shell: bash
         run: |
           bash build-linux.sh
           installer/Flow-x86_64.AppImage --appimage-extract-and-run --self-test-headless --test-report linux-runtime.json
       - uses: actions/upload-artifact@v7.0.1
+        if: always()
         with:
           name: flow-${{ runner.os }}
           path: |
@@ -49,6 +52,7 @@ jobs:
             installer/Flow-x86_64.AppImage
             installer/Flow-x86_64.AppImage.sha256
             *-runtime.json
+            windows-window.json
           if-no-files-found: error
           retention-days: 7
   publish:

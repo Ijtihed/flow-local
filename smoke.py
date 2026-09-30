@@ -4,6 +4,100 @@ import tempfile
 from pathlib import Path
 
 
+def run_window():
+    """Open the shipped Windows GUI with an empty, isolated tutorial profile."""
+    import os
+    import sys
+    import threading
+    import time
+
+    if sys.platform != 'win32':
+        raise RuntimeError('The native window check requires Windows.')
+    from version import APP_VERSION
+    report_path = None
+    if '--test-report' in sys.argv:
+        report_path = Path(sys.argv[sys.argv.index('--test-report') + 1]).resolve()
+    report = {'ok': False, 'version': APP_VERSION, 'native_window': 'starting'}
+
+    def persist():
+        if report_path:
+            report_path.write_text(json.dumps(report), encoding='utf-8')
+
+    def timed_out():
+        report.update(native_window='failed', error='Native window did not initialize within 30 seconds.')
+        persist()
+        os._exit(1)
+
+    with tempfile.TemporaryDirectory() as folder:
+        os.environ['FLOW_DATA'] = folder  # Before importing paths or ui.
+        import paths
+        import ui
+        import webview
+
+        class ProbeApi(ui.Api):
+            def settings(self):
+                return {**paths.load_settings(), 'version': APP_VERSION, 'name': 'Alex',
+                        'onboarded': True, 'tutorial_version': 0, 'native_window': True,
+                        'platform': 'windows', 'startup': False, 'speech_models': [],
+                        'recommended_model': 'small', 'gpu': None, 'cuda': False, 'ollama': {}}
+
+            def memory(self):
+                return {'terms': [], 'fixes': [], 'scanned': None}
+
+            def insights(self):
+                return {'words': 0, 'minutes_saved': 0, 'sessions': 0, 'known': 0,
+                        'wpm': 0, 'apps': [], 'today_count': 0, 'last_used': None}
+
+            def _ensure_tray(self):
+                pass  # This check never starts a recorder, engine or downloader.
+
+            def practice_status(self):
+                return {'ready': True, 'recording': False, 'busy': False, 'phase': 'ready'}
+
+            def diagnostics(self):
+                return {'status': 'passed'}
+
+            def update_status(self):
+                return {'phase': 'current', 'current': APP_VERSION}
+
+        api = ProbeApi()
+        win = ui.create_window(api)
+        watchdog = threading.Timer(30, timed_out)
+        watchdog.daemon = True
+        watchdog.start()
+
+        def verify():
+            try:
+                deadline = time.monotonic() + 20
+                while time.monotonic() < deadline:
+                    state = win.evaluate_js("""({tutorial: !document.querySelector('#tutorial').hidden,
+                        title: document.querySelector('#tourTitle')?.textContent,
+                        enabled: document.querySelector('#practiceAction')?.disabled === false,
+                        phrase: document.querySelector('#practicePhrase')?.textContent,
+                        empty: document.querySelector('.empty')?.textContent.includes('Nothing yet.')})""")
+                    if (getattr(win, '_flow_style_applied', False) and state['tutorial']
+                            and state['enabled'] and state['phrase'] != 'Getting ready…' and state['empty']):
+                        report.update(ok=True, native_window='responsive', icon='applied on GUI thread',
+                                      tutorial='visible, initialized, ready to record', history='empty')
+                        break
+                    time.sleep(.1)
+                else:
+                    raise RuntimeError('Window opened but the icon or interactive tutorial did not initialize.')
+            except Exception as error:
+                report.update(native_window='failed', error=str(error))
+            finally:
+                persist()
+                win.destroy()
+
+        win.events.loaded += verify
+        webview.start()
+        watchdog.cancel()
+    if not report['ok']:
+        raise RuntimeError(report.get('error', 'Native window closed before verification.'))
+    if sys.stdout is not None:
+        print(json.dumps(report), flush=True)
+
+
 def run(headless=False):
     import flow
     import ui

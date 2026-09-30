@@ -3,7 +3,10 @@ import sys
 
 
 def run():
-    if "--self-test" in sys.argv or "--self-test-headless" in sys.argv:
+    if "--self-test-window" in sys.argv:
+        import smoke
+        smoke.run_window()
+    elif "--self-test" in sys.argv or "--self-test-headless" in sys.argv:
         import smoke
         smoke.run(headless="--self-test-headless" in sys.argv)
     elif "--window" in sys.argv:
