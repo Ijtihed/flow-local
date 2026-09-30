@@ -47,6 +47,10 @@ def run(headless=False):
         assert (paths.APP / "assets/logos" / app["logo"]).is_file(), app["id"]
     import speech_api
     import control
+    import health
+    fixtures = json.loads((paths.APP / "assets/speech-check/manifest.json").read_text("utf-8"))
+    for fixture in fixtures["fixtures"]:
+        assert (paths.APP / "assets/speech-check" / fixture["file"]).is_file()
     assert control.TUTORIAL_VERSION == 2
     assert control.matches("I can speak instead of typing", control.PHRASES["en"])
     assert speech_api.validated_base("https://api.openai.com/v1") == "https://api.openai.com/v1"
@@ -56,7 +60,8 @@ def run(headless=False):
                       "audio_devices": len(sounddevice.query_devices()) if not headless else "not inspected",
                       "overlay": "rendered" if not headless else "not opened",
                       "assets": "present", "speech_runtime": ctranslate2.__version__,
-                      "interactive_practice": "bundled", "recording_states": "recording, thinking, polishing"}
+                      "interactive_practice": "bundled", "recording_states": "recording, thinking, polishing",
+                      "speech_check": "bundled known-audio corpus"}
     if "--test-report" in __import__("sys").argv:
         args = __import__("sys").argv
         Path(args[args.index("--test-report") + 1]).write_text(json.dumps(result), "utf-8")

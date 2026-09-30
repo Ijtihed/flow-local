@@ -93,7 +93,11 @@ Run `python -m unittest discover -s tests -v` for platform and settings-server c
 
 `--self-test-headless` checks the packaged runtime and assets without opening a window or inspecting audio/GPU devices. Add `--test-report report.json` for a saved result (useful with the Windows GUI executable).
 
-For isolated interface checks, run `npm install` and `npm test` inside `tests/`. This uses a simulated DOM and clock, without controlling a browser or accessing the desktop. It covers setup on both OSes, the first-use tutorial, model/API selection, greetings, spoken shortcuts and the website's automatic app cycle.
+For isolated interface checks, run `npm install` and `npm test` inside `tests/`. This uses a simulated DOM and clock, without controlling a browser or accessing the desktop. It covers setup on both OSes, the first-use tutorial, model/API selection, greetings, spoken shortcuts and the website's automatic Linear → Gmail → ChatGPT cycle. The app still recognizes all 65 supported products.
+
+Each time a local speech engine starts, Flow transcribes bundled synthetic test audio, including GitHub, business and download vocabulary. Missing key words, excessive word errors or inference failures show a warning. Review, copy or save the diagnostic report from the warning or Settings → Speech check. The report contains bundled test transcripts and runtime metadata; it excludes your microphone recordings, history and API key. Nothing is uploaded automatically. Add unfamiliar names to Dictionary and edit incorrect dictations to teach their spelling; a passing smoke check cannot guarantee every sentence or accent.
+
+GitHub Actions runs Windows/Linux unit and interface checks plus actual CPU Whisper-small regression tests against the bundled corpus. Run `python tools/check_speech.py --model small --download --report speech-regression.json` to reproduce the speech job. The downloaded model is cached; no personal microphone input is used. Automatic startup checks do not make paid API requests. API users verify the provider with the interactive spoken practice; actual API transcription failures also produce a diagnostic warning.
 
 ## Use the engine in your own code
 

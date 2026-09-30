@@ -17,8 +17,10 @@ function apiFixture(platform='windows', fresh=false) {
   const calls=[];
   const practice={phase:'ready',ready:true,matched:false,level:0,elapsed:0};
   const recording={ready:true,recording:false,busy:false,phase:'idle',elapsed:0};
+  const diagnostic={status:'passed',version:'1.5.0'};
   const history=fresh ? [] : Array.from({length:12},(_,i)=>({ts:new Date(2026,8,30,9,i).toISOString(),text:'Please send the project notes.',app:i%2?'firefox':'telegram',words:5,seconds:2,lang:'en'}));
-  return {S,calls,practice,recording,api:{
+  return {S,calls,practice,recording,diagnostic,api:{
+    diagnostics:async()=>clone(diagnostic),copy_speech_report:async()=>true,export_speech_report:async()=>"/fixture/Reports/check.json",
     settings:async()=>clone(S),memory:async()=>({terms:[],fixes:[],scanned:null}),stamp:async()=>1,history:async()=>clone(history),
     insights:async()=>({words:60,minutes_saved:1,wpm:150,apps:[['telegram',6],['firefox',6]],known:0,sessions:history.length,last_used:history[0]?.ts}),
     save_settings:async patch=>Object.assign(S,clone(patch)),
@@ -104,8 +106,14 @@ async function ui(platform) {
   button(ctx,'Use this engine').click();await ctx.clock.tickAsync(20);
   assert.equal(f.calls.at(-1).provider,'api');assert.equal(f.calls.at(-1).consent,true);
   assert(!ctx.d.body.textContent.includes('dummy-local-test-key'));
+  Object.assign(f.diagnostic,{status:'failed',reason:'Fixture model failed'});await ctx.clock.tickAsync(2600);
+  assert(!ctx.d.querySelector('#healthNotice').hidden);
+  button(ctx,'Review report').click();await ctx.clock.tickAsync(20);
+  assert(!ctx.d.querySelector('#reportDialog').hidden);
+  assert.equal(JSON.parse(ctx.d.querySelector('#reportText').value).status,'failed');
+  button(ctx,'Close').click();assert(ctx.d.querySelector('#reportDialog').hidden);
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));
-  ctx.close();checks+=14;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection PASS');
+  ctx.close();checks+=18;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection, diagnostic warning PASS');
 }
 async function setup(platform) {
   const f=apiFixture(platform,true),ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(50);
@@ -123,8 +131,11 @@ async function website(platform,ua) {
   // Synchronous clock steps + microtask drains avoid the host timer latency
   // of tickAsync for every 50 ms polling timer in a full 65-app cycle.
   const advance=async ms=>{for(let elapsed=0;elapsed<ms;elapsed+=50){ctx.clock.tick(50);await Promise.resolve();await Promise.resolve();}};
-  assert.equal(ctx.d.querySelector('#pause').textContent,'Pause');
-  assert.equal(ctx.d.querySelector('.bar span').textContent,'Telegram');
+  assert(!ctx.d.querySelector('#pause'));
+  assert(!ctx.d.querySelector('#appPicker'));
+  assert.equal(ctx.d.querySelector('.bar span').textContent,'Linear');
+  assert.equal(ctx.d.querySelector('footer').textContent.trim(),'Made by Ijtihed');
+  assert(ctx.d.querySelector('footer a[aria-label="Flow on GitHub"] img'));
   assert(!ctx.d.querySelector('#tag').textContent.includes('dictation demo'));
   assert(!ctx.d.querySelector('#osHint'));
   assert(!ctx.d.body.textContent.includes('Windows 10 or 11'));
@@ -133,23 +144,18 @@ async function website(platform,ua) {
   if(platform==='Linux x86_64') {assert(ctx.d.querySelector('#download').href.endsWith('Flow-x86_64.AppImage'));assert.equal(ctx.d.querySelector('#osKey').getAttribute('aria-label'),'Super key');}
   if(platform==='Win32') assert(ctx.d.querySelector('#download').href.endsWith('FlowSetup.exe'));
   if(platform==='MacIntel') assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
-  const seen=new Set();
-  const catalog=JSON.parse(read('assets/apps.json'));
-  assert.equal(ctx.d.querySelectorAll('#appPicker option').length,catalog.length);
-  assert(catalog.length>=50);
-  // Advance enough simulated time to see every app without clicking the picker.
-  for(let i=0;i<650;i++){await advance(1200);seen.add(ctx.d.querySelector('.bar span').textContent);}
-  assert.deepEqual([...seen].sort(),catalog.map(a=>a.name).sort());
-  const docs=catalog.findIndex(a=>a.id==='googledocs');
-  change(ctx,'appPicker',String(docs));await advance(200);
-  assert.equal(ctx.d.querySelector('.bar span').textContent,'Google Docs');
-  assert(ctx.d.querySelector('.doc-page'));
-  assert.equal(ctx.d.querySelector('.app-logo').getAttribute('src'),'assets/logos/'+catalog[docs].logo);
-  for(const img of ctx.d.querySelectorAll('img')) assert(fs.existsSync(root+'/site/'+img.getAttribute('src')));
-  button(ctx,'Pause').click();const current=ctx.d.querySelector('.bar span').textContent;await advance(20000);
-  assert.equal(ctx.d.querySelector('.bar span').textContent,current);
-  button(ctx,'Play').click();await advance(12000);assert.equal(ctx.d.querySelector('#pause').textContent,'Pause');
+  const seen=new Set(), order=[];
+  for(let i=0;i<110;i++) {
+    await advance(500);
+    const app=ctx.d.querySelector('.bar span').textContent;
+    seen.add(app); if(order.at(-1)!==app) order.push(app);
+    const typed=ctx.d.querySelector('.typed');
+    assert.equal(typed.children.length,0,'Text must be one continuous node');
+    for(const img of ctx.d.querySelectorAll('img')) assert(fs.existsSync(root+'/site/'+img.getAttribute('src')));
+  }
+  assert.deepEqual([...seen].sort(),['ChatGPT','Gmail','Linear']);
+  assert.deepEqual(order.slice(0,4),['Linear','Gmail','ChatGPT','Linear']);
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));ctx.close();checks+=9;
-  console.log(platform+' website: OS routing, automatic '+catalog.length+'-app cycle, picker, pause/resume PASS');
+  console.log(platform+' website: OS routing, Linear-first 3-app cycle, footer, continuous text, no demo controls PASS');
 }
 (async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await website('Win32');await website('Linux x86_64');await website('MacIntel');console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});

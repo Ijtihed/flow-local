@@ -20,6 +20,7 @@ from PIL import Image
 
 import icons
 import control
+import health
 from apps import resolve_app, display_name
 import learn
 import paths
@@ -217,24 +218,31 @@ class Flow:
             return
         self.settings = s
         self.memory.set_languages(s["languages"])
+        health.save(health.baseline(s, "checking"))
         try:
             if s.get("speech_provider") == "api":
                 self.engine.whisper = None
                 self.engine.device = "api"
             else:
                 self.engine.load(model)
-        except Exception:
+        except Exception as error:
+            health.failed_load(s, error)
             self.loading = False
             self._last_error = "Could not load the speech model. Choose another engine in Speech options."
             self.speech_signature = self._speech_signature(s)
             self.events.put(("error", "Could not load speech model. Open Settings and choose another model."))
+            self.events.put("health_warning")
             return
+        report = health.check(self.engine, s)
+        health.save(report)
         gpu = setup_tasks.nvidia_gpu() if self.engine.device != "api" else None
         (DATA / "status.json").write_text(json.dumps({"device": self.engine.device, "gpu": gpu[0] if gpu else None,
                                                       "model": s.get("api_model") if self.engine.device == "api" else s.get("model") or "large-v3"}), "utf-8")
         self.speech_signature = self._speech_signature(s)
         self.loading = False
         self.events.put("ready")
+        if report["status"] == "failed":
+            self.events.put("health_warning")
         if self.settings.get("cleanup", True):
             self.engine.warm_llm()
 
@@ -309,8 +317,8 @@ class Flow:
             settings = {**self.settings, "languages": [context["language"]]}
             text, _ = self.engine.transcribe(audio, settings)
             self.events.put(("practice_done", context["id"], text))
-        except Exception:
-            self.events.put(("practice_error", context["id"], "Could not transcribe. Check your speech engine and try again."))
+        except Exception as error:
+            self.events.put(("practice_error", context["id"], "Could not transcribe. Check your speech engine and try again.", type(error).__name__))
 
     def process(self, audio):
         t0 = time.time()
@@ -324,7 +332,7 @@ class Flow:
                 self.category = app_category(self.target_app)
             self.events.put(("done", text, len(audio) / RATE, lang, round(time.time() - t0, 2)))
         except Exception as e:
-            self.events.put(("error", repr(e)))
+            self.events.put(("error", type(e).__name__))
 
     def paste(self, text):
         from system import copy_text, read_clipboard
@@ -437,6 +445,8 @@ class Flow:
                 self.on_tray()
             elif ev in ("open", "setup"):
                 self.open_ui()
+            elif ev == "health_warning":
+                self.open_ui()
             elif ev == "quit":
                 return self.quit()
             elif ev == "ready":
@@ -458,6 +468,7 @@ class Flow:
                                                 text=text[:500], message="You did it." if matched else "That was a little different. Say the phrase above and try again.")
                         self.flash("Nice. You did it." if matched else "Try that once more")
                     else:
+                        health.failed_transcription(self.settings, ev[3] if len(ev)>3 else "SpeechError")
                         control.practice_result(ev[1], phase="retry", matched=False, message=ev[2])
                         self.flash("Check speech settings")
                     self.practice = None
@@ -482,6 +493,9 @@ class Flow:
                 self.flash("Learned " + ", ".join(m for _, m in ev[1][:2]))
             elif ev[0] == "error":
                 self.busy = False
+                if self.ready:
+                    health.failed_transcription(self.settings, ev[1])
+                    self.open_ui()
                 self.flash("Check speech settings")
                 (DATA / "speech-error.json").write_text(json.dumps({"message": ev[1], "ts": time.time()}), "utf-8")
                 print("error:", ev[1])

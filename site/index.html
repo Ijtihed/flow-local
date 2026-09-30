@@ -15,7 +15,7 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.55 "Plex Sans", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.005em;
-    display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+    display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
   a { color: inherit; }
   .wrap { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 clamp(24px, 3.5vw, 48px); }
 
@@ -68,8 +68,6 @@
   .typed { white-space: pre-wrap; }
   .caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -3px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .word { animation: word .28s ease both; }
-  @keyframes word { from { opacity: 0; filter: blur(3px); } }
 
   .pill { position: absolute; left: 50%; bottom: 18px; transform: translate(-50%, 16px) scale(.9); opacity: 0; height: 40px; padding: 0 18px; border-radius: 20px; background: #fff; border: 1px solid rgba(0,0,0,.08);
     box-shadow: 0 10px 30px rgba(0,0,0,.14); display: flex; align-items: center; gap: 4px; transition: all .35s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
@@ -83,15 +81,6 @@
 
   .app-logo { width: 23px; height: 23px; object-fit: contain; }
   .pill-mark { width: 22px; height: 22px; margin-right: 9px; }
-  .demo-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 18px; }
-  .scene-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; font-size: 12px; color: var(--ink-2); }
-  .scene-tabs select { max-width: min(260px, 52vw); color: var(--ink); font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
-  .doc-title { font-size: 22px; font-weight: 500; margin: 8px 0 14px; }
-  .doc-page { flex: 1; padding: 8px 14px; font-size: 16px; line-height: 1.65; white-space: pre-wrap; }
-  .demo-controls button { font: inherit; font-size: 12px; border: 0; background: none; color: var(--ink-2); cursor: pointer; padding: 6px 9px; border-radius: 6px; }
-  .demo-controls button[aria-pressed="true"] { background: var(--fill); color: var(--ink); }
-  .demo-controls button:hover { background: var(--side); }
-  .paused *, .paused *::after { animation-play-state: paused !important; }
   .win { animation: switch-app .5s cubic-bezier(.2,.8,.2,1); }
   @keyframes switch-app { from { opacity: .15; transform: translateY(10px) scale(.97); } }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
@@ -104,7 +93,6 @@
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Plex Sans", sans-serif; background: #fbfbfd; letter-spacing: -.015em; }
   .wrap { max-width: 1560px; padding-inline: clamp(22px, 3vw, 48px); }
   nav { height: 72px; }
-  nav .gh { font-size: 12px; }
   main { grid-template-columns: minmax(0, .7fr) minmax(0, 1.45fr); gap: clamp(32px, 4vw, 64px); padding-bottom: 28px; }
   h1 { font-family: inherit; font-size: clamp(60px, 7vw, 110px); font-weight: 600; line-height: 1.02; letter-spacing: -.06em; }
   h1 em { color: #86868b; }
@@ -125,8 +113,9 @@
   .doc-title { font-size: 28px; }
   .pill { height: 46px; padding-inline: 15px; bottom: 22px; border-radius: 24px; box-shadow: 0 8px 28px #00000018; }
   .pill i { width: 2.5px; }
-  .demo-controls { margin-top: 14px; }
-  .scene-tabs select { background: #fbfbfd; border-radius: 10px; }
+  footer { display: flex; align-items: center; justify-content: space-between; height: 46px; font-size: 12px; color: #86868b; }
+  footer a { display: inline-flex; padding: 8px; opacity: .65; }
+  footer a:hover { opacity: 1; }
   @media (max-width: 900px), (max-height: 600px) { main { grid-template-columns: 1fr; padding-bottom: 36px; } h1 { font-size: clamp(64px, 10vw, 96px); } .win { height: clamp(400px, 62vh, 600px); } }
   @media (max-width: 450px) { .body { padding: 20px; } .msg, .input, .mail, .doc-page { font-size: 17px; } .steps div + div { padding-left: 20px; } .steps div { padding-right: 20px; } }
 </style>
@@ -134,7 +123,6 @@
 <body>
   <nav class="wrap">
     <a class="brand" href="#"><img src="assets/logo.png" alt=""><b>Flow</b></a>
-    <a class="gh" href="https://github.com/Ijtihed/flow-local">GitHub</a>
   </nav>
 
   <main class="wrap">
@@ -152,38 +140,18 @@
     <div class="stage">
       <div class="tag" id="tag"></div>
       <div class="win" id="win"></div>
-      <div class="demo-controls"><div class="scene-tabs"><label for="appPicker">Try an app</label><select id="appPicker" aria-label="Demo app"></select></div><button id="pause" aria-label="Pause demo">Pause</button></div>
     </div>
   </main>
+  <footer class="wrap"><span>Made by Ijtihed</span><a href="https://github.com/Ijtihed/flow-local" aria-label="Flow on GitHub"><img src="assets/logos/github.svg" alt="" width="20" height="20"></a></footer>
 
 <script src="assets/apps.js"></script>
 <script>
 (() => {
   const scenes = [
-    { app: "Telegram", style: "very casual", kind: "chat", title: "Maya",
-      before: ["coffee after class?"], text: "yeah i'm down, meet you outside in ten" },
-    { app: "Firefox", style: "casual", kind: "browser", title: "Project notes",
-      before: ["A thought for later"], text: "Check the results from today's experiment and send the notes before Friday" },
-    { app: "Discord", style: "very casual", kind: "chat", title: "maya", avatar: "M",
-      before: ["are you coming to the thing tonight??"], text: "deadass idk if i can make it, lowkey cooked from the lab" },
-    { app: "Outlook", style: "formal", kind: "mail", to: "Maya Chen", subject: "Draft feedback",
-      text: "Hi Maya,\n\nThanks for the notes on the draft. I will send the revised version by Friday.\n\nBest,\nAlex" },
-    { app: "Codex", style: "very casual", kind: "chat", title: "flow-local", avatar: "AI",
-      before: [], text: "why does my kubernetes pod keep restarting after the config change" },
-    { app: "Slack", style: "casual", kind: "chat", title: "#launch", avatar: "#",
-      before: ["can someone review the pricing page before 5?"], text: "On it, I'll push the fix after standup" },
+    {app:"Linear",logo:"linear.svg",style:"casual",kind:"chat",title:"Launch checklist",before:["What needs to happen before launch?"],text:"Update the GitHub issue, review the pricing page, and share the download with the business team."},
+    {app:"Gmail",logo:"gmail.png",style:"formal",kind:"mail",to:"Alex Morgan",subject:"A quick update",text:"Hi Alex,\n\nThe download is ready. Please share it with the team before our meeting tomorrow.\n\nThanks,\nMaya"},
+    {app:"ChatGPT",logo:"chatgpt.svg",style:"casual",kind:"chat",title:"New chat",before:[],text:"Help me write a short update for the business team. Keep it clear and include the next steps."}
   ];
-  const originals = new Map(scenes.map(s => [s.app, s]));
-  const writing = {
-    docs: {style: "formal", kind: "doc", title: "Project notes", before: [], text: "The next draft should make the main idea clear. Start with what we learned, then explain what happens next."},
-    email: {style: "formal", kind: "mail", to: "Maya Chen", subject: "A quick update", text: "Hi Maya,\n\nThe draft is ready for your review. Let me know what you think when you have a moment.\n\nThanks,\nAlex"},
-    personal: {style: "very casual", kind: "chat", title: "Maya", before: ["still up for coffee?"], text: "yeah sounds good, i'll meet you there in ten"},
-    work: {style: "casual", kind: "chat", title: "Project team", before: ["Any update on the draft?"], text: "The first draft is ready. I'll share the link after the meeting"},
-    ai: {style: "very casual", kind: "chat", title: "New conversation", before: [], text: "help me turn these notes into a clear introduction and keep it in my own voice"},
-    code: {style: "casual", kind: "chat", title: "Project discussion", before: [], text: "Can we add a check for empty input before saving the changes?"},
-    other: {style: "casual", kind: "browser", title: "Project notes", before: ["A thought for later"], text: "Check the notes from today's meeting and send the next draft before Friday"},
-  };
-  scenes.splice(0, scenes.length, ...window.FLOW_APPS.map(a => ({...(originals.get(a.name) || writing[a.category]), app: a.name, logo: a.logo})));
   const $ = (s) => document.querySelector(s);
   const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
   const linux = /Linux/i.test(platform) && !/Android/i.test(navigator.userAgent);
@@ -203,34 +171,13 @@
     download.setAttribute("aria-label", `Download Flow for ${linux ? "Linux" : "Windows"}`);
   }
   const win = $("#win"), tag = $("#tag"), steps = $("#steps");
-  let paused = false, generation = 0, selected = 0;
-  const wait = async (ms, gen) => {
+  const wait = async ms => {
     while (ms > 0) {
-      if (gen !== generation) throw "restart";
-      await new Promise(r => setTimeout(r, 50));
-      if (!paused && !document.hidden) ms -= 50;
+      const slice = Math.min(50, ms);
+      await new Promise(r => setTimeout(r, slice));
+      if (!document.hidden) ms -= slice;
     }
-    if (gen !== generation) throw "restart";
   };
-  const pauseButton = $("#pause");
-  function reflectPause() {
-    pauseButton.textContent = paused ? "Play" : "Pause";
-    pauseButton.setAttribute("aria-label", paused ? "Play demo" : "Pause demo");
-    $(".stage").classList.toggle("paused", paused);
-  }
-  pauseButton.onclick = () => { paused = !paused; reflectPause(); };
-  reflectPause();
-  const picker = $("#appPicker");
-  const groups = {docs: "Writing and notes", email: "Email", personal: "Personal chats", work: "Work and projects", ai: "AI", code: "Code", other: "Browsers"};
-  for (const [category, label] of Object.entries(groups)) {
-    const group = document.createElement("optgroup"); group.label = label;
-    window.FLOW_APPS.forEach((app, index) => { if (app.category !== category) return; const option = document.createElement("option"); option.value = String(index); option.textContent = app.name; group.appendChild(option); });
-    picker.appendChild(group);
-  }
-  picker.onchange = () => { selected = +picker.value; generation++; paused = false; reflectPause(); };
-  document.querySelectorAll("[data-scene]").forEach(button => button.onclick = () => {
-    selected = +button.dataset.scene; generation++; paused = false; reflectPause();
-  });
   const step = (s) => steps.querySelectorAll("[data-s]").forEach((d) => d.classList.toggle("on", d.dataset.s === s));
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
@@ -268,40 +215,29 @@
     const p = pill(); win.appendChild(p); return p;
   }
 
-  async function play(sc, gen) {
-    picker.value = String(selected);
+  async function play(sc) {
     const p = render(sc);
-    document.querySelectorAll("[data-scene]").forEach(b => {
-      b.setAttribute("aria-pressed", String(+b.dataset.scene === selected));
-    });
     steps.classList.remove("held");
-    step(null); await wait(900, gen);
+    step(null); await wait(900);
     steps.classList.add("held"); step("hold");
-    p.classList.add("show", "listen"); await wait(500, gen);
-    step("talk"); await wait(1500 + sc.text.length * 12, gen);
+    p.classList.add("show", "listen"); await wait(500);
+    step("talk"); await wait(1500 + sc.text.length * 12);
     steps.classList.remove("held"); step("go");
     p.querySelector(".pill-label").textContent = "Thinking";
-    p.classList.replace("listen", "think"); await wait(650, gen);
+    p.classList.replace("listen", "think"); await wait(650);
     p.classList.remove("show");
     const out = win.querySelector(".typed");
-    const parts = sc.text.split(/(\s+)/);
-    for (const w of parts) {                       // Flow pastes all at once; revealed word by word so you can read it land
-      if (/^\s+$/.test(w)) { out.append(w); continue; }
-      const s = document.createElement("span"); s.className = "word"; s.textContent = w; out.appendChild(s);
-      await wait(45, gen);
+    // One continuous text node, without separate word animations or chunks.
+    for (let i=1; i<=sc.text.length; i++) {
+      out.textContent = sc.text.slice(0,i);
+      await wait(18);
     }
-    await wait(1100, gen);
-
-    await wait(1900, gen);
+    await wait(3500);
   }
-
   (async () => {
-    for (;;) {
-      const gen = generation;
-      try { await play(scenes[selected], gen); selected = (selected + 1) % scenes.length; }
-      catch (error) { if (error !== "restart") { console.error(error); break; } }
-    }
-  })();
+    for (;;) for (const scene of scenes) await play(scene);
+  })().catch(console.error);
+
 })();
 </script>
 </body>

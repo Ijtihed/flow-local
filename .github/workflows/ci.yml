@@ -1,0 +1,47 @@
+name: Flow checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  interface-and-unit:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '22'
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2 python3-tk
+      - run: python -m pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -v
+      - run: npm ci --prefix tests
+      - run: node tests/interface.cjs
+  speech-regression:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: sudo apt-get update && sudo apt-get install -y libportaudio2
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/huggingface/hub
+          key: speech-small-v1
+      - run: python tools/check_speech.py --model small --download --report speech-regression.json
+      - uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: speech-regression
+          path: speech-regression.json

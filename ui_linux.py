@@ -12,6 +12,7 @@ METHODS = {"stamp", "history", "delete", "clear", "copy", "edit", "settings", "s
            "enable_voice_notes", "system", "setup_run", "setup_status", "finish_onboarding",
     "configure_speech", "forget_api_key", "recording_status", "record_start", "record_stop", "record_cancel",
     "practice_open", "practice_start", "practice_stop", "practice_cancel", "practice_status", "practice_complete"}
+METHODS.update({"diagnostics", "copy_speech_report", "export_speech_report"})
 
 
 def make_server(api):

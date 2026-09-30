@@ -1,0 +1,7 @@
+{
+  "source": "Generated offline with Windows SAPI; no microphone or personal recording.",
+  "fixtures": [
+    {"id":"basic-dictation","file":"practice.wav","text":"I can speak instead of typing.","max_word_error_rate":0.15},
+    {"id":"business-github-download","file":"business.wav","text":"Open GitHub and share the download with the business team.","required":["github","download","business"],"max_word_error_rate":0.2}
+  ]
+}

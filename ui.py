@@ -15,6 +15,7 @@ import vault
 import voicenotes
 import speech_api
 import control
+import health
 from memory import Memory
 from paths import HISTORY, MEMORY
 
@@ -219,6 +220,22 @@ class Api:
         return vn
 
     # ---- first-run setup
+    def diagnostics(self):
+        return health.current()
+
+    def copy_speech_report(self):
+        from system import copy_text
+        copy_text(json.dumps(health.current(), ensure_ascii=False, indent=2))
+        return True
+
+    def export_speech_report(self):
+        import time
+        report = health.current()
+        folder = paths.DATA / "Reports"
+        file = folder / ("Flow-speech-check-" + time.strftime("%Y%m%d-%H%M%S") + ".json")
+        control.atomic_json(file, report)
+        return str(file)
+
     def _ensure_tray(self):
         if control.state().get("alive"):
             return
