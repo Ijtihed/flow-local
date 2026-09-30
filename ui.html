@@ -4,17 +4,11 @@
 <meta charset="utf-8">
 <title>Flow</title>
 <style>
-  @font-face { font-family: "Inter"; src: url("assets/Inter-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap;
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-  @font-face { font-family: "Inter"; src: url("assets/Inter-latin-ext.woff2") format("woff2"); font-weight: 100 900; font-display: swap;
-    unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-  @font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif.woff2") format("woff2"); font-display: swap;
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF; }
-  @font-face { font-family: "Instrument Serif"; src: url("assets/InstrumentSerif-ext.woff2") format("woff2"); font-display: swap;
-    unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20C0, U+2C60-2C7F, U+A720-A7FF; }
-  @font-face { font-family: "Instrument Serif"; font-style: italic; src: url("assets/InstrumentSerif-italic.woff2") format("woff2"); font-display: swap; }
+  @font-face { font-family: "Plex Sans"; src: url("assets/PlexSans-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Plex Sans"; src: url("assets/PlexSans-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+  @font-face { font-family: "Plex Sans"; src: url("assets/PlexSans-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 
-  :root {
+:root {
     --bg: #FFFFFF;
     --side: #F7F7F5;
     --hover: #EFEFEC;
@@ -24,14 +18,14 @@
     --ink-2: #6B6B68;
     --ink-3: #A5A5A1;
     --red: #D93025;
-    --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    --serif: "Plex Sans", "Iowan Old Style", Georgia, serif;
     --ease: cubic-bezier(.2,.8,.2,1);
     color-scheme: light;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
-  body { background: var(--bg); color: var(--ink); font: 14px/1.5 "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-    font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; display: flex; overflow: hidden; user-select: none; letter-spacing: -.005em; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.5 "Plex Sans", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; display: flex; overflow: hidden; user-select: none; letter-spacing: -.005em; }
   button, input, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
   button { background: none; border: 0; cursor: pointer; padding: 0; }
   svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
@@ -41,7 +35,7 @@
   aside { width: 224px; flex: none; background: var(--side); border-right: 1px solid var(--line); padding: 20px 12px 16px; display: flex; flex-direction: column; gap: 1px; }
   .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 22px; }
   .brand img { width: 26px; height: 26px; }
-  .brand b { font-family: var(--serif); font-weight: 400; font-size: 24px; letter-spacing: -.01em; line-height: 1; }
+  .brand b { font-family: var(--serif); font-weight: 500; font-size: 24px; letter-spacing: -.01em; line-height: 1; }
   .nav { display: flex; align-items: center; gap: 11px; height: 34px; padding: 0 10px; border-radius: 8px; color: var(--ink-2); width: 100%; text-align: left; font-weight: 500; transition: background .15s, color .15s; }
   .nav:hover { background: var(--hover); color: var(--ink); }
   .nav.on { background: var(--hover); color: var(--ink); }
@@ -50,7 +44,7 @@
   .local { display: inline-flex; align-items: center; gap: 8px; }
   .local i { width: 6px; height: 6px; border-radius: 50%; background: #3C9A5F; }
   .keys { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-  kbd { font: 500 11.5px/1 "Inter", sans-serif; color: var(--ink); background: #fff; border: 1px solid #DDDDD9; border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; }
+  kbd { font: 500 11.5px/1 "Plex Sans", sans-serif; color: var(--ink); background: #fff; border: 1px solid #DDDDD9; border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; }
 
   /* content */
   main { flex: 1; min-width: 0; overflow-y: auto; }
@@ -60,8 +54,8 @@
   .view { animation: in .3s var(--ease); }
   @keyframes in { from { opacity: 0; transform: translateY(4px); } }
 
-  h1 { font-family: var(--serif); font-weight: 400; font-size: 44px; letter-spacing: -.015em; line-height: 1.05; margin: 0 0 10px; }
-  h1 em { font-style: italic; color: var(--ink-2); }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 44px; letter-spacing: -.015em; line-height: 1.05; margin: 0 0 10px; }
+  h1 em { font-style: normal; color: var(--ink-2); }
   .lede { color: var(--ink-2); font-size: 14.5px; margin: 0 0 40px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .section { display: flex; align-items: baseline; justify-content: space-between; margin: 44px 0 4px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
   .section h2 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .06em; }
@@ -79,9 +73,11 @@
   .stat { padding: 20px 0 18px 20px; }
   .stat:first-child { padding-left: 0; }
   .stat + .stat { border-left: 1px solid var(--line); }
-  .stat b { display: block; font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .stat b { display: block; font-family: var(--serif); font-weight: 500; font-size: 40px; line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
   .stat span { display: block; margin-top: 8px; color: var(--ink-2); font-size: 12.5px; }
   .apps { padding-top: 6px; }
+  .app-name { display: flex; align-items: center; gap: 7px; }
+  .app-name img { width: 18px; height: 18px; object-fit: contain; }
   .appbar { display: grid; grid-template-columns: 120px 1fr 32px; align-items: center; gap: 16px; padding: 9px 0; font-size: 13.5px; }
   .appbar .track { height: 3px; background: var(--fill); border-radius: 3px; overflow: hidden; }
   .appbar .track i { display: block; height: 100%; background: var(--ink); border-radius: 3px; transform-origin: left; animation: grow .8s var(--ease) both; }
@@ -105,7 +101,7 @@
   .icon:hover { background: var(--fill); color: var(--ink); }
   .icon svg { width: 16px; height: 16px; }
   .empty { color: var(--ink-2); padding: 36px 0; border-bottom: 1px solid var(--line); }
-  .empty strong { display: block; color: var(--ink); font-family: var(--serif); font-weight: 400; font-size: 24px; margin-bottom: 4px; }
+  .empty strong { display: block; color: var(--ink); font-family: var(--serif); font-weight: 500; font-size: 24px; margin-bottom: 4px; }
 
   /* forms */
   .adder { display: flex; gap: 10px; flex-wrap: wrap; padding: 4px 0 8px; }
@@ -147,7 +143,7 @@
   .lang:hover { border-color: #C9C9C4; }
   .lang.on { background: var(--ink); color: #fff; border-color: var(--ink); }
   .example { margin-top: 12px; font-family: var(--serif); font-size: 19px; color: var(--ink); }
-  .example span { font-family: "Inter", sans-serif; font-size: 12px; color: var(--ink-3); margin-right: 10px; }
+  .example span { font-family: "Plex Sans", sans-serif; font-size: 12px; color: var(--ink-3); margin-right: 10px; }
   .danger { color: var(--red); font-weight: 500; font-size: 13.5px; }
   .danger.confirm { background: var(--red); color: #fff; padding: 6px 12px; border-radius: 16px; }
   .path { font-size: 12px; color: var(--ink-2); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }
@@ -221,7 +217,7 @@ const CATS = [
   ["docs", "Docs and notes", "Word, Notion, Obsidian, Google Docs"],
   ["other", "Everything else", "Browsers and all other apps"],
 ];
-const APP_NAMES = { whatsapp: "WhatsApp", code: "VS Code", "ms-teams": "Teams", teams: "Teams", olk: "Outlook", chatgpt: "ChatGPT", windowsterminal: "Terminal", wt: "Terminal", winword: "Word", powerpnt: "PowerPoint" };
+const APP_NAMES = { codex: "Codex", slack: "Slack", discord: "Discord", whatsapp: "WhatsApp", code: "VS Code", "ms-teams": "Teams", teams: "Teams", olk: "Outlook", chatgpt: "ChatGPT", windowsterminal: "Terminal", wt: "Terminal", winword: "Word", powerpnt: "PowerPoint" };
 const STYLE_EX = { formal: "Hey, are we still on for tonight? I can bring snacks.", casual: "Hey, are we still on for tonight? I can bring snacks", "very casual": "hey are we still on for tonight? i can bring snacks" };
 const $ = (s) => document.querySelector(s);
 const api = () => window.pywebview.api;
@@ -231,6 +227,7 @@ let M = { terms: [], fixes: [], scanned: null }, I = { words: 0, minutes_saved: 
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const kbd = (sc) => (SHORTCUTS[sc] || [sc]).map((k) => `<kbd>${k}</kbd>`).join("");
+const APP_LOGOS = {codex: "codex.png", chatgpt: "chatgpt.svg", slack: "slack.png", discord: "discord.svg", outlook: "outlook.svg", olk: "outlook.svg"};
 const appName = (a) => { const k = (a || "").toLowerCase(); return APP_NAMES[k] || (k ? k[0].toUpperCase() + k.slice(1) : ""); };
 const mine = () => M.terms.filter((t) => ["you", "learned", "history", "project"].includes(t.source));
 const section = (title, aside = "") => `<div class="section"><h2>${title}</h2>${aside !== "" ? `<span class="aside">${aside}</span>` : ""}</div>`;
@@ -276,7 +273,7 @@ function renderHome() {
       <div class="stat"><b data-to="${I.known}">0</b><span>of your words learned</span></div>
     </div>`;
   if (I.apps.length) {
-    html += section("Where you talk") + `<div class="apps">${I.apps.map(([a, c]) => `<div class="appbar"><span>${esc(appName(a))}</span><span class="track"><i style="width:${Math.max(3, c / top * 100)}%"></i></span><span class="c">${c}</span></div>`).join("")}</div>`;
+    html += section("Where you talk") + `<div class="apps">${I.apps.map(([a, c]) => `<div class="appbar"><span class="app-name">${APP_LOGOS[a.toLowerCase()] ? `<img src="assets/logos/${APP_LOGOS[a.toLowerCase()]}" alt="">` : ""}${esc(appName(a))}</span><span class="track"><i style="width:${Math.max(3, c / top * 100)}%"></i></span><span class="c">${c}</span></div>`).join("")}</div>`;
   }
   html += `<div class="section"><h2>Recent</h2><label class="search"><svg><use href="#i-search"/></svg><input id="q" placeholder="Search" spellcheck="false" value="${esc(query)}"></label></div>`;
   if (!items.length) {
@@ -389,6 +386,7 @@ function renderSettings() {
   const engine = st.device === "cuda" ? `Whisper ${esc(st.model)} on your ${esc(st.gpu || "GPU")}.` : S.gpu && !S.cuda ? `Running on the CPU. GPU acceleration (1.4 GB) makes it several times faster on your ${esc(S.gpu)}.` : S.gpu && S.cuda ? "GPU acceleration is installed. Quit and reopen Flow from the tray to use it." : "Whisper, running on the CPU.";
   $("#view").innerHTML = `<h1>Settings</h1><p class="lede">Everything runs on this PC. No account, no cloud.</p>
     ${section("Dictation")}
+    ${S.platform === "linux" && S.session === "wayland" ? `<p class="note">Wayland shortcuts need readable keyboard devices. Automatic pasting needs uinput or a supported wtype compositor; otherwise press Ctrl+V yourself. See the Linux setup in the README.</p>` : ""}
     <div class="row"><div class="l"><b>Shortcut</b><small>Hold to talk, let go to paste. Double-tap, or tap Space while holding, for hands-free. Esc cancels.</small></div><select id="s-shortcut">${opt}</select></div>
     <div class="row col"><div class="l"><b>Languages you speak</b><small>Flow listens for these and follows you when you switch mid-conversation.</small></div>
       <div class="under"><div class="langs">${Object.entries(LANGS).map(([k, l]) => `<button class="lang ${S.languages.includes(k) ? "on" : ""}" data-lang="${k}">${l}</button>`).join("")}</div></div></div>
@@ -400,7 +398,7 @@ function renderSettings() {
     <div class="row"><div class="l"><b>Speech engine</b><small>${engine}</small></div>${S.gpu && !S.cuda ? `<button class="btn ghost" id="s-cuda">Download</button>` : ""}</div>
     <div class="row"><div class="l"><b>Smart cleanup</b><small>${ol.model ? "Removes ums and applies your self-corrections with a small local model. It can only delete words, never invent them." : ol.running ? "Download the 1.4 GB cleanup model to turn this on." : "Needs Ollama (ollama.com). Until then Flow uses basic cleanup."}</small></div>
       ${ol.model ? `<button class="switch ${S.cleanup ? "on" : ""}" data-toggle="cleanup"></button>` : ol.running ? `<button class="btn ghost" id="s-pull">Download</button>` : ""}</div>
-    <div class="row"><div class="l"><b>Learn from my fixes</b><small>A few seconds after pasting, Flow checks whether you corrected a word and remembers it. Password fields are never read.</small></div><button class="switch ${S.learn ? "on" : ""}" data-toggle="learn"></button></div>
+    <div class="row"><div class="l"><b>Learn from my fixes</b><small>${S.auto_learn === false ? "On Linux, edit a dictation in History to teach Flow a correction." : "A few seconds after pasting, Flow checks whether you corrected a word and remembers it. Password fields are never read."}</small></div><button class="switch ${S.learn ? "on" : ""}" data-toggle="learn"></button></div>
     ${section("Obsidian")}
     <div class="row col"><div class="l"><b>Voice notes</b><small>Every dictation goes into a daily note in your vault. The folder is kept out of git, so it stays on this PC.</small></div><button class="switch ${vn.enabled ? "on" : ""}" id="s-vn"></button>
       ${vn.enabled && vn.folder ? `<div class="under"><span class="path">${esc(vn.folder)}</span></div>` : ""}</div>
@@ -489,7 +487,7 @@ async function obNext() {
     btn.disabled = true; btn.textContent = "Getting to know you…";
     if (ob.notes) await api().enable_voice_notes(true);
     await api().finish_onboarding(ob.name, ob.langs, ob.scan && (ob.sys.vaults || []).length > 0);
-    $("#ob").hidden = true; await boot(); toast("You're set. Hold Ctrl + Win to talk.");
+    $("#ob").hidden = true; await boot(); toast("You're set. Hold " + SHORTCUTS[S.shortcut].join(" + ") + " to talk.");
     return;
   }
   ob.step++; obRender();
@@ -532,6 +530,7 @@ async function boot() {
 async function init() {
   if (init.done) return; init.done = true;
   S = await api().settings();
+  if (S.platform === "linux") SHORTCUTS["ctrl+win"] = ["Ctrl", "Super"];
   if (!S.onboarded) {
     ob.sys = await api().system(); ob.name = ob.sys.name || ""; ob.langs = S.languages && S.languages.length ? S.languages : ["en"];
     $("#ob").hidden = false; obRender();

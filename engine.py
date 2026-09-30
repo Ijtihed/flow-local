@@ -75,31 +75,11 @@ CLEAN_SHOTS = [
 
 
 def add_cuda_dlls():
-    # cuBLAS/cuDNN: the setup-downloaded GPU pack, or pip's site-packages/nvidia/*/bin when run from source
-    import setup_tasks
-    for bin_dir in setup_tasks.cuda_dirs():
-        os.add_dll_directory(bin_dir)
-        os.environ["PATH"] = bin_dir + os.pathsep + os.environ["PATH"]
+    from system import load_cuda
+    load_cuda()
 
 
-def foreground_app():
-    """(exe name, window title) of the window the text will land in."""
-    user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
-    hwnd = user32.GetForegroundWindow()
-    title = ctypes.create_unicode_buffer(512)
-    user32.GetWindowTextW(hwnd, title, 512)
-    pid = wt.DWORD()
-    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
-    exe = ""
-    h = kernel32.OpenProcess(0x1000, False, pid.value)
-    if h:
-        buf = ctypes.create_unicode_buffer(520)
-        size = wt.DWORD(520)
-        if kernel32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)):
-            exe = Path(buf.value).stem.lower()
-        kernel32.CloseHandle(h)
-    return exe, title.value
-
+from system import foreground_app
 
 def app_category(app):
     exe, title = app

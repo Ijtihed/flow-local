@@ -1,0 +1,233 @@
+"""The floating pill that shows Flow is listening. Drawing is shared; each OS has its own way to show it."""
+import tkinter as tk
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+import paths
+import icons
+from system import IS_WIN
+
+
+class PillBase:
+    """The listening pill, drawn with PIL (anti-aliased, soft shadow). Subclasses put it on screen."""
+
+    SS = 3  # supersampling
+
+    def __init__(self, root, scale):
+        self.s = scale
+        self.win = tk.Toplevel(root)
+        self.win.overrideredirect(True)
+        self.win.geometry("1x1+0+0")
+        self.win.update_idletasks()
+        self.visible = False
+        self.font = self._font(12.5)
+        self.mark = icons.app_icon(round(22 * scale * self.SS))
+        self.shadows = {}
+
+    def _font(self, size):
+        for name in ("SegUIVar.ttf", "segoeui.ttf", "DejaVuSans.ttf"):
+            try:
+                return ImageFont.truetype(name, int(size * self.s * self.SS))
+            except OSError:
+                continue
+        return ImageFont.load_default()
+
+    def show(self):
+        if not self.visible:
+            self.win.deiconify()
+            self.visible = True
+
+    def hide(self):
+        if self.visible:
+            self.win.withdraw()
+            self.visible = False
+
+    def _shadow(self, w, h, m, r):
+        key = (w, h)
+        if key not in self.shadows:
+            img = Image.new("L", (w + 2 * m, h + 2 * m), 0)
+            ImageDraw.Draw(img).rounded_rectangle((m, m + m * 0.35, m + w, m + h + m * 0.35), r, fill=70)
+            self.shadows[key] = img.filter(ImageFilter.GaussianBlur(m / 2.4))
+        return self.shadows[key]
+
+    def render(self, state, t, levels, message, appear, locked=False):
+        k = self.s * self.SS
+        text_w = 0
+        if state == "message":
+            text_w = self.font.getlength(message) / k
+        w_l = 156 if state != "message" else max(156, text_w + 72)
+        if locked:
+            w_l = 178  # room for the hands-free dot
+        h_l = 38
+        # Apple-ish entrance: grow from a narrow capsule
+        e = 1 - (1 - appear) ** 3
+        w_l = h_l + (w_l - h_l) * e
+        W, H, M, R = int(w_l * k), int(h_l * k), int(18 * k), int(h_l * k / 2)
+        img = Image.new("RGBA", (W + 2 * M, H + 2 * M), (0, 0, 0, 0))
+        img.putalpha(self._shadow(W, H, M, R))
+        d = ImageDraw.Draw(img)
+        d.rounded_rectangle((M, M, M + W, M + H), R, fill=(255, 255, 255, 252), outline=(0, 0, 0, 26),
+                            width=max(1, int(k)))
+        cx, cy = M + W / 2, M + H / 2
+        if e > 0.6:
+            a = int(255 * min(1, (e - 0.6) / 0.4))
+            mark = self.mark.copy()
+            mark.putalpha(mark.getchannel("A").point(lambda v: round(v * a / 255)))
+            img.alpha_composite(mark, (int(M + 12 * k), int(cy - mark.height / 2)))
+            cx += 14 * k
+            if state == "listening":
+                n, gap, bw = 13, 6.2 * k, 2.6 * k
+                if locked:  # hands-free: pulsing red dot on the left, bars nudged right
+                    r = 3.6 * k * (0.85 + 0.15 * np.sin(t * 5))
+                    dx = M + 45 * k
+                    d.ellipse((dx - r, cy - r, dx + r, cy + r), fill=(255, 69, 88, a))
+                    cx += 9 * k
+                x0 = cx - (n - 1) * gap / 2
+                for i in range(n):
+                    lv = levels[-n + i] if len(levels) >= n else 0.0
+                    env = 1 - abs(i - (n - 1) / 2) / ((n - 1) / 2) * 0.45
+                    bh = (3 + 19 * min(1.0, lv) * env) * k
+                    x = x0 + i * gap
+                    d.rounded_rectangle((x - bw / 2, cy - bh / 2, x + bw / 2, cy + bh / 2), bw / 2,
+                                        fill=(22, 22, 24, a))
+            elif state == "transcribing":
+                n, gap, bw = 13, 6.2 * k, 2.6 * k
+                x0 = cx - (n - 1) * gap / 2
+                for i in range(n):
+                    wave = 0.5 + 0.5 * np.sin(t * 7 - i * 0.55)
+                    bh = (3 + 5 * wave) * k
+                    x = x0 + i * gap
+                    d.rounded_rectangle((x - bw / 2, cy - bh / 2, x + bw / 2, cy + bh / 2), bw / 2,
+                                        fill=(22, 22, 24, int(a * (0.3 + 0.7 * wave))))
+            else:
+                d.text((cx, cy), message, font=self.font, fill=(29, 29, 31, a), anchor="mm")
+        img = img.resize((img.width // self.SS, img.height // self.SS), Image.LANCZOS)
+        self._blit(img)
+
+
+if IS_WIN:
+    import ctypes
+    import ctypes.wintypes as wt
+
+    user32 = ctypes.windll.user32
+    gdi32 = ctypes.windll.gdi32
+
+    class BLENDFUNCTION(ctypes.Structure):
+        _fields_ = [("op", ctypes.c_byte), ("flags", ctypes.c_byte), ("alpha", ctypes.c_ubyte), ("fmt", ctypes.c_byte)]
+
+
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [("biSize", wt.DWORD), ("biWidth", wt.LONG), ("biHeight", wt.LONG), ("biPlanes", wt.WORD),
+                    ("biBitCount", wt.WORD), ("biCompression", wt.DWORD), ("biSizeImage", wt.DWORD),
+                    ("biXPelsPerMeter", wt.LONG), ("biYPelsPerMeter", wt.LONG), ("biClrUsed", wt.DWORD),
+                    ("biClrImportant", wt.DWORD)]
+
+
+    user32.GetParent.restype = wt.HWND
+    user32.GetDC.restype = wt.HDC
+    user32.GetDC.argtypes = [wt.HWND]
+    gdi32.CreateCompatibleDC.restype = wt.HDC
+    gdi32.CreateCompatibleDC.argtypes = [wt.HDC]
+    gdi32.CreateDIBSection.restype = wt.HBITMAP
+    gdi32.CreateDIBSection.argtypes = [wt.HDC, ctypes.c_void_p, wt.UINT, ctypes.POINTER(ctypes.c_void_p), wt.HANDLE, wt.DWORD]
+    gdi32.SelectObject.restype = wt.HGDIOBJ
+    gdi32.SelectObject.argtypes = [wt.HDC, wt.HGDIOBJ]
+    gdi32.DeleteObject.argtypes = [wt.HGDIOBJ]
+    gdi32.DeleteDC.argtypes = [wt.HDC]
+    user32.ReleaseDC.argtypes = [wt.HWND, wt.HDC]
+    user32.UpdateLayeredWindow.argtypes = [wt.HWND, wt.HDC, ctypes.POINTER(wt.POINT), ctypes.POINTER(wt.SIZE), wt.HDC,
+                                           ctypes.POINTER(wt.POINT), wt.DWORD, ctypes.POINTER(BLENDFUNCTION), wt.DWORD]
+
+    class Pill(PillBase):
+        """Per-pixel-alpha, click-through Win32 layered window fed with PIL frames."""
+
+        def __init__(self, root):
+            super().__init__(root, user32.GetDpiForSystem() / 96)
+            self.hwnd = user32.GetParent(self.win.winfo_id())
+            style = user32.GetWindowLongW(self.hwnd, -20)
+            # layered | click-through | topmost | no taskbar button | never takes focus
+            user32.SetWindowLongW(self.hwnd, -20, style | 0x80000 | 0x20 | 0x8 | 0x80 | 0x08000000)
+            self.win.withdraw()
+
+        def _blit(self, img):
+            w, h = img.size
+            arr = np.asarray(img, dtype=np.uint16)
+            alpha = arr[..., 3:4]
+            bgra = np.empty((h, w, 4), np.uint8)
+            bgra[..., :3] = (arr[..., [2, 1, 0]] * alpha // 255).astype(np.uint8)
+            bgra[..., 3] = arr[..., 3]
+            sw, sh = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+            x, y = (sw - w) // 2, sh - h - int(64 * self.s)
+
+            screen = user32.GetDC(None)
+            mem = gdi32.CreateCompatibleDC(screen)
+            bi = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
+            bits = ctypes.c_void_p()
+            bmp = gdi32.CreateDIBSection(mem, ctypes.byref(bi), 0, ctypes.byref(bits), None, 0)
+            ctypes.memmove(bits, bgra.tobytes(), w * h * 4)
+            old = gdi32.SelectObject(mem, bmp)
+            blend = BLENDFUNCTION(0, 0, 255, 1)
+            user32.UpdateLayeredWindow(self.hwnd, screen, ctypes.byref(wt.POINT(x, y)), ctypes.byref(wt.SIZE(w, h)),
+                                       mem, ctypes.byref(wt.POINT(0, 0)), 0, ctypes.byref(blend), 2)
+            gdi32.SelectObject(mem, old)
+            gdi32.DeleteObject(bmp)
+            gdi32.DeleteDC(mem)
+            user32.ReleaseDC(None, screen)
+
+else:
+    from PIL import ImageTk
+
+    class Pill(PillBase):
+        """Linux: a Tk window cut to the pill's shape with the X Shape extension (XWayland too), click-through."""
+
+        def __init__(self, root):
+            super().__init__(root, max(1.0, root.winfo_fpixels("1i") / 96))
+            self.win.attributes("-topmost", True)
+            try:
+                self.win.attributes("-type", "notification")
+            except tk.TclError:
+                pass
+            self.label = tk.Label(self.win, bd=0, highlightthickness=0, bg="white")
+            self.label.pack()
+            self.win.withdraw()
+            self.shape_key = None
+            self.photo = None
+
+        def _blit(self, img):
+            alpha = img.getchannel("A")
+            box = alpha.point(lambda v: 255 if v > 160 else 0).getbbox()
+            if not box:
+                return
+            img = img.crop(box)
+            mask = np.asarray(img.getchannel("A")) > 160
+            flat = Image.new("RGB", img.size, (255, 255, 255))
+            flat.paste(img, mask=img.getchannel("A"))
+            self.photo = ImageTk.PhotoImage(flat)
+            self.label.configure(image=self.photo)
+            w, h = img.size
+            sw, sh = self.win.winfo_screenwidth(), self.win.winfo_screenheight()
+            self.win.geometry(f"{w}x{h}+{(sw - w) // 2}+{sh - h - int(72 * self.s)}")
+            key = (w, h, mask.sum())
+            if key != self.shape_key:
+                self.shape_key = key
+                self._shape(mask)
+
+        def _shape(self, mask):
+            try:
+                from Xlib import X, display
+                from Xlib.ext import shape
+                d = display.Display()
+                self.win.update_idletasks()
+                win = d.create_resource_object("window", int(self.win.wm_frame(), 16))
+                rects = []
+                for y, row in enumerate(mask):
+                    xs = np.flatnonzero(row)
+                    if xs.size:
+                        rects.append((int(xs[0]), y, int(xs[-1] - xs[0] + 1), 1))
+                win.shape_rectangles(shape.SO.Set, shape.SK.Bounding, X.Unsorted, 0, 0, rects)
+                win.shape_rectangles(shape.SO.Set, shape.SK.Input, X.Unsorted, 0, 0, [])   # click-through
+                d.sync()
+                d.close()
+            except Exception as e:
+                print("pill shape:", e)

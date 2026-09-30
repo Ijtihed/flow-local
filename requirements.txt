@@ -4,14 +4,16 @@ sounddevice>=0.5
 pyperclip>=1.9
 pystray>=0.19
 pillow>=11.0
-pywebview>=6.0
+pywebview>=6.0; sys_platform == "win32"
 requests>=2.32
 huggingface_hub>=0.30
 wordfreq>=3.1
 rapidfuzz>=3.10
-uiautomation>=2.0
+uiautomation>=2.0; sys_platform == "win32"
 unidecode>=1.3
 
-# NVIDIA GPU (optional, much faster). Skip on CPU-only machines.
-nvidia-cublas-cu12
-nvidia-cudnn-cu12==9.*
+evdev>=1.7; sys_platform == "linux"
+pynput>=1.7; sys_platform == "linux"
+python-xlib>=0.33; sys_platform == "linux"
+
+# GPU libraries download through setup when needed, or use requirements-gpu.txt.

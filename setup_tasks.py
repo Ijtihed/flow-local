@@ -1,7 +1,7 @@
 """First-run setup for a new machine. The only time Flow touches the network; after this it runs offline.
 
   speech model   Whisper from Hugging Face into %APPDATA%\\Flow\\models (reuses an existing HF cache)
-  GPU pack       NVIDIA cuBLAS/cuDNN DLLs from PyPI wheels, only when an NVIDIA GPU is present
+  GPU pack       NVIDIA cuBLAS/cuDNN libraries from PyPI wheels, only when an NVIDIA GPU is present
   cleanup model  qwen3:1.7b through a locally installed Ollama (optional)
 """
 import ctypes
@@ -30,40 +30,7 @@ _lock = threading.Lock()
 
 # ------------------------------------------------------------ detection
 
-def nvidia_gpu():
-    """(name, vram_gb) of the first NVIDIA GPU, or None. Uses the driver directly; no CUDA toolkit needed."""
-    try:
-        cu = ctypes.WinDLL("nvcuda.dll")
-    except OSError:
-        return None
-    if cu.cuInit(0) != 0:
-        return None
-    n = ctypes.c_int()
-    if cu.cuDeviceGetCount(ctypes.byref(n)) != 0 or n.value < 1:
-        return None
-    dev = ctypes.c_int()
-    cu.cuDeviceGet(ctypes.byref(dev), 0)
-    name = ctypes.create_string_buffer(128)
-    cu.cuDeviceGetName(name, 128, dev)
-    mem = ctypes.c_size_t()
-    fn = getattr(cu, "cuDeviceTotalMem_v2", None) or cu.cuDeviceTotalMem
-    fn(ctypes.byref(mem), dev)
-    return name.value.decode(errors="ignore"), round(mem.value / 2**30, 1)
-
-
-def cuda_dirs():
-    import glob
-    import sys
-    dirs = [str(paths.CUDA)] if paths.CUDA.exists() else []
-    for sp in map(Path, sys.path):
-        dirs += glob.glob(str(sp / "nvidia" / "*" / "bin"))
-    return dirs
-
-
-def cuda_ready():
-    names = {f.name.lower() for d in cuda_dirs() for f in Path(d).glob("*.dll")}
-    return "cublas64_12.dll" in names and any(n.startswith("cudnn64_9") for n in names)
-
+from system import nvidia_gpu, cuda_dirs, cuda_ready
 
 def find_model(name):
     """Local path of a Whisper model if it's already on this PC."""
@@ -94,18 +61,8 @@ def ollama_status():
 
 def guess_name():
     import vault
-    n = vault.find_name(vault.vault_paths())
-    if n:
-        return n
-    try:
-        buf = ctypes.create_unicode_buffer(256)
-        size = ctypes.c_ulong(256)
-        if ctypes.windll.secur32.GetUserNameExW(3, buf, ctypes.byref(size)) and buf.value.strip():  # display name
-            return buf.value.strip()
-    except Exception:
-        pass
-    return getpass.getuser().replace(".", " ").title()
-
+    from system import display_name
+    return vault.find_name(vault.vault_paths()) or display_name()
 
 def recommended_model(gpu):
     return "large-v3" if gpu and gpu[1] >= 4 else "small"
@@ -178,7 +135,9 @@ def _download_cuda():
     wheels = []
     for pkg, ver in CUDA_WHEELS:
         meta = requests.get(f"https://pypi.org/pypi/{pkg}/{ver}/json", timeout=20).json()
-        w = next(u for u in meta["urls"] if u["filename"].endswith("win_amd64.whl"))
+        from system import IS_WIN
+        w = next(u for u in meta["urls"] if (u["filename"].endswith("win_amd64.whl") if IS_WIN
+                 else "manylinux" in u["filename"] and u["filename"].endswith("x86_64.whl")))
         wheels.append(w)
     total = sum(w["size"] for w in wheels)
     _set(label="Downloading GPU acceleration (NVIDIA libraries)", total=total)
@@ -195,7 +154,8 @@ def _download_cuda():
             tmp.seek(0)
             with zipfile.ZipFile(tmp) as z:
                 for info in z.infolist():
-                    if info.filename.lower().endswith(".dll") and "/bin/" in info.filename:
+                    if ((info.filename.lower().endswith(".dll") and "/bin/" in info.filename) if IS_WIN
+                        else "/lib/" in info.filename and ".so" in Path(info.filename).name):
                         with z.open(info) as src, open(paths.CUDA / Path(info.filename).name, "wb") as dst:
                             shutil.copyfileobj(src, dst)
 

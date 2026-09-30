@@ -19,13 +19,15 @@ SECRETISH = re.compile(r"\b(?=[A-Za-z0-9_\-]*\d)(?=[A-Za-z0-9_\-]*[A-Za-z])[A-Za
 
 
 def vault_paths():
-    cfg = Path(os.environ.get("APPDATA", "")) / "obsidian" / "obsidian.json"
-    try:
-        vaults = json.loads(cfg.read_text("utf-8")).get("vaults", {})
-        return [Path(v["path"]) for v in vaults.values() if Path(v["path"]).exists()]
-    except Exception:
-        return []
-
+    from system import obsidian_config
+    found = []
+    for cfg in obsidian_config():
+        try:
+            vaults = json.loads(cfg.read_text("utf-8")).get("vaults", {})
+            found.extend(Path(v["path"]) for v in vaults.values() if Path(v["path"]).exists())
+        except (OSError, ValueError, KeyError):
+            continue
+    return list(dict.fromkeys(found))
 
 def _notes(root):
     for dirpath, dirnames, filenames in os.walk(root):

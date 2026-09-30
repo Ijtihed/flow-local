@@ -14,6 +14,9 @@ CHECKS = (6, 20)   # seconds after paste
 
 
 def focused_text():
+    from system import IS_WIN
+    if not IS_WIN:
+        return None, None   # Linux learns corrections made in Flow's history editor.
     import uiautomation as auto
     with auto.UIAutomationInitializerInThread(debug=False):
         c = auto.GetFocusedControl()

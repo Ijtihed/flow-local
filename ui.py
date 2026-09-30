@@ -1,12 +1,11 @@
 """Flow window: onboarding, history, dictionary, snippets, settings. Started by the tray app with --window."""
 import ctypes
 import json
-import winreg
 from collections import Counter
 from pathlib import Path
 
-import webview
 
+from system import IS_WIN, startup_enabled, set_startup
 import icons
 import paths
 import setup_tasks
@@ -51,8 +50,8 @@ class Api:
         write_history([])
 
     def copy(self, text):
-        import pyperclip
-        pyperclip.copy(text)
+        from system import copy_text
+        copy_text(text)
 
     def edit(self, ts, text):
         """You fixed a dictation: save it and learn from the difference."""
@@ -68,6 +67,9 @@ class Api:
     def settings(self):
         s = paths.load_settings()
         s["startup"] = self._startup()
+        s["platform"] = "windows" if IS_WIN else "linux"
+        s["session"] = __import__("os").environ.get("XDG_SESSION_TYPE", "x11")
+        s["auto_learn"] = IS_WIN
         s["ollama"] = setup_tasks.ollama_status()
         try:
             s["status"] = json.loads((paths.DATA / "status.json").read_text("utf-8"))
@@ -86,22 +88,11 @@ class Api:
             self._memory().set_languages(cur["languages"])
 
     def _startup(self):
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
-                winreg.QueryValueEx(k, "Flow")
-                return True
-        except OSError:
-            return False
+        return startup_enabled()
 
     def _set_startup(self, on):
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
-            if on:
-                winreg.SetValueEx(k, "Flow", 0, winreg.REG_SZ, " ".join(f'"{c}"' for c in paths.launch_command()))
-            else:
-                try:
-                    winreg.DeleteValue(k, "Flow")
-                except OSError:
-                    pass
+        set_startup(on, paths.launch_command())
+
 
     # ---- insights for Home
     def insights(self):
@@ -199,11 +190,16 @@ def style_window(window):
 
 
 def main():
+    if not IS_WIN:
+        from ui_linux import serve
+        serve(Api())
+        return
+    import webview
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Flow.Dictation")
     if not paths.FROZEN:
         icons.ensure_app_ico(paths.ICON)
-    win = webview.create_window("Flow", str(paths.APP / "ui.html"), js_api=Api(), width=1000, height=700,
+    win = webview.create_window("Dictation settings", str(paths.APP / "ui.html"), js_api=Api(), width=1000, height=700,
                                 min_size=(720, 520), background_color="#FFFFFF")
     win.events.shown += lambda: style_window(win)
     webview.start()

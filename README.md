@@ -1,6 +1,6 @@
 # Flow
 
-A free, local replacement for Wispr Flow on Windows. Hold a key, talk, let go, and your words are typed wherever your cursor is. Nothing leaves your PC.
+Free, local voice dictation for Windows and Linux. Hold a key, talk, let go, and your words are typed wherever your cursor is. Speech and personal vocabulary stay on your computer.
 
 ![Flow](docs/home.png)
 
@@ -8,14 +8,39 @@ A free, local replacement for Wispr Flow on Windows. Hold a key, talk, let go, a
 
 [Download FlowSetup.exe](https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe) (Windows 10 and 11, no admin needed)
 
-The first time it opens, Flow downloads the speech model once (about 3 GB). After that it works offline.
+[Download Flow-x86_64.AppImage](https://github.com/Ijtihed/flow-local/releases/latest/download/Flow-x86_64.AppImage) (Linux x86_64, Ubuntu 22.04 or newer / compatible distributions)
+
+The repository and downloads are private until the owner chooses to publish them. Sign into GitHub with an account that has repository access to download.
+
+The first time it opens, Flow downloads the speech model once (about 3 GB on GPU, 0.5 GB for the smaller CPU model). GPU acceleration and optional cleanup models are separate downloads. After setup, dictation works offline.
+
+### Linux setup
+
+Download the AppImage, then run:
+
+```bash
+chmod +x Flow-x86_64.AppImage
+./Flow-x86_64.AppImage
+```
+
+If your distribution does not support mounting AppImages, run `./Flow-x86_64.AppImage --appimage-extract-and-run` instead.
+
+Use `Ctrl` + `Super` (the Windows/logo key), or choose F8 / Right Ctrl in settings. The settings window opens in your browser at an authenticated loopback address on your own computer. Flow adds launchers to your application menu after its first start.
+
+X11 supports global shortcuts, clipboard pasting and active-app detection. It uses bundled clipboard/paste tools, with pynput as a shortcut fallback. The tray needs a desktop with a system tray (GNOME may require an AppIndicator extension). Open Flow Settings from the application menu if your desktop hides the tray.
+
+Wayland support is experimental. Global shortcuts require read access to your keyboard's `/dev/input/event*` devices (for example, distribution-managed input group access). Flow never grants these permissions itself. `Space`, `Esc`, F8 and Caps Lock also reach the focused app on Linux, so Right Ctrl is often the least disruptive shortcut. Wayland clipboard support needs `wl-clipboard`; automatic pasting needs writable `/dev/uinput` or a compositor that supports `wtype`. Without automatic pasting, Flow leaves the text on the clipboard and asks you to press Ctrl+V. Active-app style detection is unavailable for native Wayland windows.
+
+On Linux, teach corrections by editing dictations in Flow's History. Reading corrections automatically from other apps remains Windows-only. Speech recognition, dictionary learning, local cleanup and voice notes are shared across both platforms.
+
+The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the packaged speech libraries, audio device detection and overlay. Source checks also exercised X11 keyboard events, clipboard pasting and speech transcription on the CPU. A physical Linux keyboard and the native Wayland path were not available for validation. Other distributions are not yet certified.
 
 ## Use it
 
 - Hold `Ctrl` + `Win`, talk, let go. The text is pasted where you're typing.
 - Double tap `Ctrl` + `Win` (or tap `Space` while holding) for hands free. Press again to finish.
 - `Esc` cancels.
-- Click the tray icon to open your history, dictionary and settings.
+- Click the tray icon to start or stop hands-free dictation. Use its Open Flow menu item for history, dictionary and settings.
 
 ## What it does
 
@@ -39,6 +64,20 @@ python -m venv .venv
 ```
 
 To build the installer yourself: install [Inno Setup](https://jrsoftware.org/isinfo.php), then run `.\build.ps1`.
+
+On Linux:
+
+```bash
+sudo apt install python3-venv python3-tk libportaudio2 libasound2-plugins xclip xdotool
+python3 -m venv .venv-linux
+.venv-linux/bin/pip install -r requirements.txt
+.venv-linux/bin/python main.py
+bash build-linux.sh
+```
+
+`build-linux.sh` builds `installer/Flow-x86_64.AppImage` with PyInstaller and the official [AppImage packaging tools](https://docs.appimage.org/packaging-guide/manual.html). Speech models and NVIDIA libraries are downloaded during setup. For source installs, GPU libraries can also be installed with `pip install -r requirements-gpu.txt`.
+
+Run `python -m unittest discover -s tests -v` for platform and settings-server checks. Run `Flow.exe --self-test` or `./Flow-x86_64.AppImage --self-test` on a desktop to verify the bundled speech runtime, audio devices, assets and overlay without modifying your personal data.
 
 ## Use the engine in your own code
 
@@ -80,7 +119,7 @@ See [examples/transcribe_file.py](examples/transcribe_file.py) for a complete sc
 | `learn.py` | Notices when you fix a word |
 | `ui.html`, `ui.py` | The settings window |
 
-Your data lives in `%APPDATA%\Flow`.
+Your data lives in `%APPDATA%\Flow` on Windows and `$XDG_DATA_HOME/flow` (normally `~/.local/share/flow`) on Linux. Set `FLOW_DATA` to override it.
 
 ## License
 

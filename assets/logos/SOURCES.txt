@@ -1,0 +1,21 @@
+App marks identify the applications shown in the demo. They remain the property of their respective owners.
+
+slack.png
+Source page: https://slack.com/media-kit
+Asset: https://a.slack-edge.com/9cc0056/img/icons/favicon-32.png
+
+discord.svg
+Source page: https://discord.com/branding
+Asset: https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d80db9971f10a9757c99_Symbol.svg
+
+outlook.svg
+Source page: https://www.microsoft.com/en-us/microsoft-365/outlook/email-and-calendar-software-microsoft-outlook
+Asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icons/en-us/m365-app-icons-fy26/Outlook-Icon-FY26.svg
+
+chatgpt.svg
+Source page: https://openai.com/brand/
+Asset: https://openai.com/favicon.svg
+
+codex.png
+Source page: https://openai.com/codex/
+Asset: Codex app GA logo from the installed official OpenAI desktop package (webview/assets/codex-app-ga-logo-3e5209898ca3.png).

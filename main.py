@@ -3,7 +3,10 @@ import sys
 
 
 def run():
-    if "--window" in sys.argv:
+    if "--self-test" in sys.argv:
+        import smoke
+        smoke.run()
+    elif "--window" in sys.argv:
         import ui
         ui.main()
     else:

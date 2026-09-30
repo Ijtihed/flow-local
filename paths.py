@@ -1,11 +1,13 @@
-"""Where Flow keeps things. Installed: code in Program Files-style folder, data in %APPDATA%\\Flow."""
+"""Application assets are read-only; user data lives in APPDATA on Windows or XDG_DATA_HOME on Linux."""
 import os
 import sys
 from pathlib import Path
 
 FROZEN = getattr(sys, "frozen", False)
 APP = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))   # read-only: ui.html, assets/
-DATA = Path(os.environ.get("FLOW_DATA") or Path(os.environ.get("APPDATA", Path.home())) / "Flow")
+_default_data = (Path(os.environ.get("APPDATA", Path.home())) / "Flow" if sys.platform == "win32"
+                 else Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "flow")
+DATA = Path(os.environ.get("FLOW_DATA") or _default_data)
 HISTORY = DATA / "history.jsonl"
 SETTINGS = DATA / "settings.json"
 MEMORY = DATA / "memory.db"
@@ -49,6 +51,8 @@ def save_settings(patch):
 
 def launch_command(*args):
     """How to start another Flow process (the window), frozen or from source."""
+    if sys.platform.startswith("linux") and os.environ.get("APPIMAGE"):
+        return [os.environ["APPIMAGE"], *args]
     if FROZEN:
         return [sys.executable, *args]
     pyw = Path(sys.executable).with_name("pythonw.exe")
