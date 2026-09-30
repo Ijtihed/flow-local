@@ -61,7 +61,13 @@ class NativePopup(unittest.TestCase):
                 self.assertGreater(rect.right-rect.left, 180)
                 self.assertGreaterEqual(rect.bottom-rect.top, 48)
                 self.assertTrue(user32.GetWindowLongW(p.hwnd, -20) & 0x8)
-                self.assertEqual(user32.GetForegroundWindow(), foreground)
+                active = user32.GetForegroundWindow()
+                self.assertNotEqual(active, p.hwnd, 'Popup took keyboard focus')
+                self.assertTrue(user32.GetWindowLongW(p.hwnd, -20) & 0x08000000)
+                # Windows CI can start with no foreground window while Tk's
+                # hidden root is being unmapped. There is no focus to preserve.
+                if foreground:
+                    self.assertEqual(active, foreground)
                 p.hide(); root.update()
         finally:
             root.destroy()
