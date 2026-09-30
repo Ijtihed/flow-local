@@ -1,0 +1,975 @@
+[
+  {
+    "id": "telegram",
+    "name": "Telegram",
+    "category": "personal",
+    "aliases": [
+      "telegram",
+      "telegram-desktop",
+      "telegramdesktop",
+      "org.telegram.desktop"
+    ],
+    "titles": [
+      "Telegram"
+    ],
+    "site": "https://telegram.org",
+    "logo": "telegram.svg"
+  },
+  {
+    "id": "firefox",
+    "name": "Firefox",
+    "category": "other",
+    "aliases": [
+      "firefox",
+      "firefox-esr",
+      "org.mozilla.firefox"
+    ],
+    "titles": [
+      "Firefox"
+    ],
+    "site": "https://www.firefox.com",
+    "logo": "firefox.svg"
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "category": "personal",
+    "aliases": [
+      "discord",
+      "com.discordapp.discord"
+    ],
+    "titles": [
+      "Discord"
+    ],
+    "site": "https://discord.com",
+    "logo": "discord.svg"
+  },
+  {
+    "id": "outlook",
+    "name": "Outlook",
+    "category": "email",
+    "aliases": [
+      "outlook",
+      "olk",
+      "hxoutlook"
+    ],
+    "titles": [
+      "Outlook"
+    ],
+    "site": "https://outlook.com",
+    "logo": "outlook.svg"
+  },
+  {
+    "id": "codex",
+    "name": "Codex",
+    "category": "ai",
+    "aliases": [
+      "codex"
+    ],
+    "titles": [
+      "Codex"
+    ],
+    "site": "https://openai.com/codex",
+    "logo": "codex.png"
+  },
+  {
+    "id": "slack",
+    "name": "Slack",
+    "category": "work",
+    "aliases": [
+      "slack",
+      "com.slack.slack"
+    ],
+    "titles": [
+      "Slack"
+    ],
+    "site": "https://slack.com",
+    "logo": "slack.png"
+  },
+  {
+    "id": "word",
+    "name": "Word",
+    "category": "docs",
+    "aliases": [
+      "word",
+      "winword"
+    ],
+    "titles": [
+      "Microsoft Word",
+      "Word"
+    ],
+    "site": "https://www.microsoft.com",
+    "logo": "word.svg"
+  },
+  {
+    "id": "googledocs",
+    "name": "Google Docs",
+    "category": "docs",
+    "aliases": [
+      "googledocs",
+      "google docs"
+    ],
+    "titles": [
+      "Google Docs"
+    ],
+    "site": "https://docs.google.com",
+    "logo": "googledocs.png",
+    "source": "https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico"
+  },
+  {
+    "id": "notion",
+    "name": "Notion",
+    "category": "docs",
+    "aliases": [
+      "notion",
+      "notion-app",
+      "notion.so"
+    ],
+    "titles": [
+      "Notion"
+    ],
+    "site": "https://www.notion.com",
+    "logo": "notion.png",
+    "source": "https://www.notion.com/front-static/favicon.ico"
+  },
+  {
+    "id": "obsidian",
+    "name": "Obsidian",
+    "category": "docs",
+    "aliases": [
+      "obsidian",
+      "md.obsidian.obsidian"
+    ],
+    "titles": [
+      "Obsidian"
+    ],
+    "site": "https://obsidian.md",
+    "logo": "obsidian.svg"
+  },
+  {
+    "id": "onenote",
+    "name": "OneNote",
+    "category": "docs",
+    "aliases": [
+      "onenote",
+      "onenoteim"
+    ],
+    "titles": [
+      "OneNote"
+    ],
+    "site": "https://www.microsoft.com",
+    "logo": "onenote.svg",
+    "source": "https://www.microsoft.com/content/dam/microsoft/bade/images/icons/en-us/m365-app-icons-fy26/OneNote-Icon-FY26.svg"
+  },
+  {
+    "id": "evernote",
+    "name": "Evernote",
+    "category": "docs",
+    "aliases": [
+      "evernote",
+      "com.evernote.evernote"
+    ],
+    "titles": [
+      "Evernote"
+    ],
+    "site": "https://evernote.com",
+    "logo": "evernote.png",
+    "source": "https://evernote.com/images/evernote-logo-serp.png"
+  },
+  {
+    "id": "joplin",
+    "name": "Joplin",
+    "category": "docs",
+    "aliases": [
+      "joplin",
+      "net.cozic.joplin_desktop"
+    ],
+    "titles": [
+      "Joplin"
+    ],
+    "site": "https://joplinapp.org",
+    "logo": "joplin.png",
+    "source": "https://joplinapp.org/images/favicon.png"
+  },
+  {
+    "id": "simplenote",
+    "name": "Simplenote",
+    "category": "docs",
+    "aliases": [
+      "simplenote",
+      "com.simplenote.simplenote"
+    ],
+    "titles": [
+      "Simplenote"
+    ],
+    "site": "https://simplenote.com",
+    "logo": "simplenote.png",
+    "source": "https://simplenote.com/wp-content/uploads/2020/07/cropped-icon_512x512.png?w=192"
+  },
+  {
+    "id": "standardnotes",
+    "name": "Standard Notes",
+    "category": "docs",
+    "aliases": [
+      "standardnotes",
+      "standard notes",
+      "org.standardnotes.standardnotes"
+    ],
+    "titles": [
+      "Standard Notes"
+    ],
+    "site": "https://standardnotes.com",
+    "logo": "standardnotes.png",
+    "source": "https://standardnotes.com/apple-touch-icon.png"
+  },
+  {
+    "id": "scrivener",
+    "name": "Scrivener",
+    "category": "docs",
+    "aliases": [
+      "scrivener"
+    ],
+    "titles": [
+      "Scrivener"
+    ],
+    "site": "https://www.literatureandlatte.com",
+    "logo": "scrivener.svg",
+    "source": "https://www.literatureandlatte.com/wp-content/themes/toast/assets/fonts/Icons/icons.ttf (icon-scrivener glyph)"
+  },
+  {
+    "id": "typora",
+    "name": "Typora",
+    "category": "docs",
+    "aliases": [
+      "typora",
+      "io.typora.typora"
+    ],
+    "titles": [
+      "Typora"
+    ],
+    "site": "https://typora.io",
+    "logo": "typora.png",
+    "source": "https://typora.io/img/favicon-128.png"
+  },
+  {
+    "id": "libreoffice",
+    "name": "LibreOffice Writer",
+    "category": "docs",
+    "aliases": [
+      "libreoffice",
+      "soffice",
+      "libreoffice-writer",
+      "startcenter",
+      "writer"
+    ],
+    "titles": [
+      "LibreOffice Writer"
+    ],
+    "site": "https://www.libreoffice.org",
+    "logo": "libreoffice.png",
+    "source": "https://www.libreoffice.org/favicon.ico"
+  },
+  {
+    "id": "onlyoffice",
+    "name": "ONLYOFFICE",
+    "category": "docs",
+    "aliases": [
+      "onlyoffice",
+      "desktopeditors",
+      "org.onlyoffice.desktopeditors"
+    ],
+    "titles": [
+      "ONLYOFFICE"
+    ],
+    "site": "https://www.onlyoffice.com",
+    "logo": "onlyoffice.png",
+    "source": "https://static-site.onlyoffice.com/public/images/favicons/favicon325.png"
+  },
+  {
+    "id": "craft",
+    "name": "Craft",
+    "category": "docs",
+    "aliases": [
+      "craft"
+    ],
+    "titles": [
+      "Craft"
+    ],
+    "site": "https://www.craft.do",
+    "logo": "craft.png",
+    "source": "https://www.craft.do/favicons/light/light_192.png"
+  },
+  {
+    "id": "coda",
+    "name": "Coda",
+    "category": "docs",
+    "aliases": [
+      "coda"
+    ],
+    "titles": [
+      "Coda"
+    ],
+    "site": "https://coda.io",
+    "logo": "coda.png",
+    "source": "https://cdn.coda.io/icons/png/color/coda-192.png"
+  },
+  {
+    "id": "confluence",
+    "name": "Confluence",
+    "category": "docs",
+    "aliases": [
+      "confluence"
+    ],
+    "titles": [
+      "Confluence"
+    ],
+    "site": "https://www.atlassian.com/software/confluence",
+    "logo": "confluence.svg",
+    "source": "https://registry.npmjs.org/@atlaskit/logo/-/logo-23.3.1.tgz (package/dist/esm/artifacts/logo-components/confluence/icon.js)"
+  },
+  {
+    "id": "dropboxpaper",
+    "name": "Dropbox Paper",
+    "category": "docs",
+    "aliases": [
+      "dropboxpaper"
+    ],
+    "titles": [
+      "Dropbox Paper"
+    ],
+    "site": "https://www.dropbox.com/paper",
+    "logo": "dropboxpaper.png",
+    "source": "https://cfl.dropboxstatic.com/static/metaserver/static/images/favicon.ico"
+  },
+  {
+    "id": "overleaf",
+    "name": "Overleaf",
+    "category": "docs",
+    "aliases": [
+      "overleaf"
+    ],
+    "titles": [
+      "Overleaf"
+    ],
+    "site": "https://www.overleaf.com",
+    "logo": "overleaf.svg",
+    "source": "https://cdn.overleaf.com/favicon.svg"
+  },
+  {
+    "id": "grammarly",
+    "name": "Grammarly",
+    "category": "docs",
+    "aliases": [
+      "grammarly",
+      "grammarly.desktop"
+    ],
+    "titles": [
+      "Grammarly"
+    ],
+    "site": "https://www.grammarly.com",
+    "logo": "grammarly.png",
+    "source": "https://static-web.grammarly.com/cms/master/public/favicon-32x32.png"
+  },
+  {
+    "id": "wordpress",
+    "name": "WordPress",
+    "category": "docs",
+    "aliases": [
+      "wordpress"
+    ],
+    "titles": [
+      "WordPress"
+    ],
+    "site": "https://wordpress.com",
+    "logo": "wordpress.png",
+    "source": "https://0.gravatar.com/blavatar/653166773dc88127bd3afe0b6dfe5ea7?s=114&d=https%3A%2F%2Fs1.wp.com%2Fi%2Fwebclip.png"
+  },
+  {
+    "id": "medium",
+    "name": "Medium",
+    "category": "docs",
+    "aliases": [
+      "medium"
+    ],
+    "titles": [
+      "Medium"
+    ],
+    "site": "https://medium.com",
+    "logo": "medium.svg",
+    "source": "https://raw.githubusercontent.com/Medium/medium-logos/master/03_Symbol/01_Black/SVG/Medium_Symbol_NoPadding.svg"
+  },
+  {
+    "id": "substack",
+    "name": "Substack",
+    "category": "docs",
+    "aliases": [
+      "substack"
+    ],
+    "titles": [
+      "Substack"
+    ],
+    "site": "https://substack.com",
+    "logo": "substack.svg",
+    "source": "https://substackcdn.com/icons/substack/icon.svg"
+  },
+  {
+    "id": "powerpoint",
+    "name": "PowerPoint",
+    "category": "docs",
+    "aliases": [
+      "powerpoint",
+      "powerpnt"
+    ],
+    "titles": [
+      "PowerPoint"
+    ],
+    "site": "https://www.microsoft.com",
+    "logo": "powerpoint.svg"
+  },
+  {
+    "id": "gmail",
+    "name": "Gmail",
+    "category": "email",
+    "aliases": [
+      "gmail"
+    ],
+    "titles": [
+      "Gmail"
+    ],
+    "site": "https://mail.google.com",
+    "logo": "gmail.png",
+    "source": "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico"
+  },
+  {
+    "id": "thunderbird",
+    "name": "Thunderbird",
+    "category": "email",
+    "aliases": [
+      "thunderbird",
+      "org.mozilla.thunderbird"
+    ],
+    "titles": [
+      "Thunderbird"
+    ],
+    "site": "https://www.thunderbird.net",
+    "logo": "thunderbird.png",
+    "source": "https://www.thunderbird.net/media/img/thunderbird/favicon-196.png"
+  },
+  {
+    "id": "protonmail",
+    "name": "Proton Mail",
+    "category": "email",
+    "aliases": [
+      "protonmail",
+      "proton mail",
+      "ch.protonmail.protonmail"
+    ],
+    "titles": [
+      "Proton Mail"
+    ],
+    "site": "https://proton.me/mail",
+    "logo": "protonmail.png",
+    "source": "https://mail.proton.me/assets/apple-touch-icon-180x180.png"
+  },
+  {
+    "id": "fastmail",
+    "name": "Fastmail",
+    "category": "email",
+    "aliases": [
+      "fastmail"
+    ],
+    "titles": [
+      "Fastmail"
+    ],
+    "site": "https://www.fastmail.com",
+    "logo": "fastmail.svg",
+    "source": "https://www.fastmail.com/favicon.svg?v=5843ac65"
+  },
+  {
+    "id": "superhuman",
+    "name": "Superhuman",
+    "category": "email",
+    "aliases": [
+      "superhuman"
+    ],
+    "titles": [
+      "Superhuman"
+    ],
+    "site": "https://superhuman.com",
+    "logo": "superhuman.svg",
+    "source": "https://superhumanstatic.com/super-funnel/main/public/images/v4/favicons/superhuman-icon.svg"
+  },
+  {
+    "id": "yahoomail",
+    "name": "Yahoo Mail",
+    "category": "email",
+    "aliases": [
+      "yahoomail"
+    ],
+    "titles": [
+      "Yahoo Mail"
+    ],
+    "site": "https://mail.yahoo.com",
+    "logo": "yahoomail.png",
+    "source": "https://s.yimg.com/cv/apiv2/default/hp/favicon.ico"
+  },
+  {
+    "id": "teams",
+    "name": "Teams",
+    "category": "work",
+    "aliases": [
+      "teams",
+      "ms-teams",
+      "msteams",
+      "com.microsoft.teams"
+    ],
+    "titles": [
+      "Microsoft Teams",
+      "Teams"
+    ],
+    "site": "https://www.microsoft.com",
+    "logo": "teams.svg"
+  },
+  {
+    "id": "whatsapp",
+    "name": "WhatsApp",
+    "category": "personal",
+    "aliases": [
+      "whatsapp",
+      "whatsapp.root",
+      "com.whatsapp.whatsapp"
+    ],
+    "titles": [
+      "WhatsApp"
+    ],
+    "site": "https://www.whatsapp.com",
+    "logo": "whatsapp.svg",
+    "source": "https://static.whatsapp.net/rsrc.php/y1/r/FJbTMJqMap7.svg"
+  },
+  {
+    "id": "signal",
+    "name": "Signal",
+    "category": "personal",
+    "aliases": [
+      "signal",
+      "signal-desktop",
+      "org.signal.signal"
+    ],
+    "titles": [
+      "Signal"
+    ],
+    "site": "https://signal.org",
+    "logo": "signal.svg",
+    "source": "https://signal.org/assets/images/favicon/favicon.svg"
+  },
+  {
+    "id": "messenger",
+    "name": "Messenger",
+    "category": "personal",
+    "aliases": [
+      "messenger"
+    ],
+    "titles": [
+      "Messenger"
+    ],
+    "site": "https://www.messenger.com",
+    "logo": "messenger.png",
+    "source": "https://static.xx.fbcdn.net/rsrc.php/yO/r/qa11ER6rke_.ico"
+  },
+  {
+    "id": "googlechat",
+    "name": "Google Chat",
+    "category": "work",
+    "aliases": [
+      "googlechat"
+    ],
+    "titles": [
+      "Google Chat"
+    ],
+    "site": "https://chat.google.com",
+    "logo": "googlechat.png",
+    "source": "https://www.gstatic.com/images/branding/product/2x/chat_2020q4_48dp.png"
+  },
+  {
+    "id": "zoom",
+    "name": "Zoom",
+    "category": "work",
+    "aliases": [
+      "zoom",
+      "zoom.us",
+      "us.zoom.zoom"
+    ],
+    "titles": [
+      "Zoom"
+    ],
+    "site": "https://www.zoom.com",
+    "logo": "zoom.png",
+    "source": "https://st1.zoom.us/homepage/20260929-1235/primary/favicon.ico"
+  },
+  {
+    "id": "linkedin",
+    "name": "LinkedIn",
+    "category": "work",
+    "aliases": [
+      "linkedin"
+    ],
+    "titles": [
+      "LinkedIn"
+    ],
+    "site": "https://www.linkedin.com",
+    "logo": "linkedin.svg",
+    "source": "https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8"
+  },
+  {
+    "id": "reddit",
+    "name": "Reddit",
+    "category": "personal",
+    "aliases": [
+      "reddit"
+    ],
+    "titles": [
+      "Reddit"
+    ],
+    "site": "https://www.reddit.com",
+    "logo": "reddit.png",
+    "source": "https://www.reddit.com/favicon.ico"
+  },
+  {
+    "id": "instagram",
+    "name": "Instagram",
+    "category": "personal",
+    "aliases": [
+      "instagram"
+    ],
+    "titles": [
+      "Instagram"
+    ],
+    "site": "https://www.instagram.com",
+    "logo": "instagram.png",
+    "source": "https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp"
+  },
+  {
+    "id": "chatgpt",
+    "name": "ChatGPT",
+    "category": "ai",
+    "aliases": [
+      "chatgpt",
+      "com.openai.chatgpt"
+    ],
+    "titles": [
+      "ChatGPT"
+    ],
+    "site": "https://openai.com",
+    "logo": "chatgpt.svg"
+  },
+  {
+    "id": "claude",
+    "name": "Claude",
+    "category": "ai",
+    "aliases": [
+      "claude",
+      "claude-desktop"
+    ],
+    "titles": [
+      "Claude"
+    ],
+    "site": "https://claude.ai",
+    "logo": "claude.png",
+    "source": "https://claude.ai/favicon.ico"
+  },
+  {
+    "id": "gemini",
+    "name": "Gemini",
+    "category": "ai",
+    "aliases": [
+      "gemini"
+    ],
+    "titles": [
+      "Gemini"
+    ],
+    "site": "https://gemini.google.com",
+    "logo": "gemini.png",
+    "source": "https://www.gstatic.com/lamda/images/gemini_sparkle_4g_512_lt_f94943af3be039176192d.png"
+  },
+  {
+    "id": "copilot",
+    "name": "Microsoft Copilot",
+    "category": "ai",
+    "aliases": [
+      "copilot",
+      "copilot"
+    ],
+    "titles": [
+      "Microsoft Copilot",
+      "Copilot"
+    ],
+    "site": "https://copilot.microsoft.com",
+    "logo": "copilot.svg",
+    "source": "https://copilot.microsoft.com/static/cmc/favicon.svg"
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity",
+    "category": "ai",
+    "aliases": [
+      "perplexity"
+    ],
+    "titles": [
+      "Perplexity"
+    ],
+    "site": "https://www.perplexity.ai",
+    "logo": "perplexity.png",
+    "source": "https://www.perplexity.ai/favicon.ico"
+  },
+  {
+    "id": "vscode",
+    "name": "VS Code",
+    "category": "code",
+    "aliases": [
+      "vscode",
+      "code",
+      "code-insiders",
+      "visual studio code",
+      "com.visualstudio.code"
+    ],
+    "titles": [
+      "Visual Studio Code",
+      "VS Code"
+    ],
+    "site": "https://code.visualstudio.com",
+    "logo": "vscode.png",
+    "source": "https://code.visualstudio.com/assets/favicon.ico"
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor",
+    "category": "code",
+    "aliases": [
+      "cursor",
+      "cursor-editor"
+    ],
+    "titles": [
+      "Cursor"
+    ],
+    "site": "https://cursor.com",
+    "logo": "cursor.svg",
+    "source": "https://cursor.com/marketing-static/favicon-light.svg"
+  },
+  {
+    "id": "sublime",
+    "name": "Sublime Text",
+    "category": "code",
+    "aliases": [
+      "sublime",
+      "sublime_text",
+      "sublime-text"
+    ],
+    "titles": [
+      "Sublime Text"
+    ],
+    "site": "https://www.sublimetext.com",
+    "logo": "sublime.png",
+    "source": "https://www.sublimetext.com/images/icon.png"
+  },
+  {
+    "id": "pycharm",
+    "name": "PyCharm",
+    "category": "code",
+    "aliases": [
+      "pycharm",
+      "pycharm64",
+      "jetbrains-pycharm"
+    ],
+    "titles": [
+      "PyCharm"
+    ],
+    "site": "https://www.jetbrains.com/pycharm",
+    "logo": "pycharm.png",
+    "source": "https://resources.jetbrains.com/storage/products/pycharm/img/meta/pycharm_logo_300x300.png"
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "category": "code",
+    "aliases": [
+      "github",
+      "githubdesktop"
+    ],
+    "titles": [
+      "GitHub"
+    ],
+    "site": "https://github.com",
+    "logo": "github.svg",
+    "source": "https://github.githubassets.com/assets/pinned-octocat-093da3e6fa40.svg"
+  },
+  {
+    "id": "gitlab",
+    "name": "GitLab",
+    "category": "code",
+    "aliases": [
+      "gitlab"
+    ],
+    "titles": [
+      "GitLab"
+    ],
+    "site": "https://about.gitlab.com",
+    "logo": "gitlab.png",
+    "source": "https://about.gitlab.com/images/ico/favicon-192x192.png"
+  },
+  {
+    "id": "linear",
+    "name": "Linear",
+    "category": "work",
+    "aliases": [
+      "linear"
+    ],
+    "titles": [
+      "Linear"
+    ],
+    "site": "https://linear.app",
+    "logo": "linear.svg",
+    "source": "https://linear.app/static/favicon.svg?v=2"
+  },
+  {
+    "id": "asana",
+    "name": "Asana",
+    "category": "work",
+    "aliases": [
+      "asana"
+    ],
+    "titles": [
+      "Asana"
+    ],
+    "site": "https://asana.com",
+    "logo": "asana.png",
+    "source": "https://asana.com/assets/img/brand/asana-logo-favicon.ico"
+  },
+  {
+    "id": "trello",
+    "name": "Trello",
+    "category": "work",
+    "aliases": [
+      "trello"
+    ],
+    "titles": [
+      "Trello"
+    ],
+    "site": "https://trello.com",
+    "logo": "trello.png",
+    "source": "https://www.trello.com/favicon.ico"
+  },
+  {
+    "id": "clickup",
+    "name": "ClickUp",
+    "category": "work",
+    "aliases": [
+      "clickup"
+    ],
+    "titles": [
+      "ClickUp"
+    ],
+    "site": "https://clickup.com",
+    "logo": "clickup.png",
+    "source": "https://clickup.com/favicons/favicon-32x32.png"
+  },
+  {
+    "id": "todoist",
+    "name": "Todoist",
+    "category": "work",
+    "aliases": [
+      "todoist",
+      "com.todoist.todoist"
+    ],
+    "titles": [
+      "Todoist"
+    ],
+    "site": "https://www.todoist.com",
+    "logo": "todoist.svg",
+    "source": "https://www.todoist.com/static/safari-pinned-tab.svg"
+  },
+  {
+    "id": "chrome",
+    "name": "Chrome",
+    "category": "other",
+    "aliases": [
+      "chrome",
+      "google-chrome",
+      "google-chrome-stable",
+      "chromium",
+      "chromium-browser",
+      "com.google.chrome"
+    ],
+    "titles": [
+      "Chrome"
+    ],
+    "site": "https://www.google.com/chrome",
+    "logo": "chrome.svg",
+    "source": "https://www.google.com/chrome/static/images/chrome-logo-m100.svg"
+  },
+  {
+    "id": "edge",
+    "name": "Microsoft Edge",
+    "category": "other",
+    "aliases": [
+      "edge",
+      "msedge",
+      "msedge_proxy",
+      "microsoft-edge",
+      "microsoft-edge-stable",
+      "com.microsoft.edge"
+    ],
+    "titles": [
+      "Microsoft Edge"
+    ],
+    "site": "https://www.microsoft.com/edge",
+    "logo": "edge.png",
+    "source": "https://edgecdn-embza6g8cacagcbn.z01.azurefd.net/welcome/static/favicon.png"
+  },
+  {
+    "id": "brave",
+    "name": "Brave",
+    "category": "other",
+    "aliases": [
+      "brave",
+      "brave-browser",
+      "com.brave.browser"
+    ],
+    "titles": [
+      "Brave"
+    ],
+    "site": "https://brave.com",
+    "logo": "brave.png",
+    "source": "https://brave.com/static-assets/images/cropped-brave_appicon_release-192x192.png"
+  },
+  {
+    "id": "opera",
+    "name": "Opera",
+    "category": "other",
+    "aliases": [
+      "opera",
+      "opera-browser"
+    ],
+    "titles": [
+      "Opera"
+    ],
+    "site": "https://www.opera.com",
+    "logo": "opera.svg",
+    "source": "https://cdn-production-opera-website.operacdn.com/staticfiles/assets/images/favicon/opera/safari-pinned-tab.2ff3aa479bec.svg"
+  },
+  {
+    "id": "vivaldi",
+    "name": "Vivaldi",
+    "category": "other",
+    "aliases": [
+      "vivaldi",
+      "vivaldi-stable",
+      "com.vivaldi.vivaldi"
+    ],
+    "titles": [
+      "Vivaldi"
+    ],
+    "site": "https://vivaldi.com",
+    "logo": "vivaldi.png",
+    "source": "https://vivaldi.com/wp-content/uploads/cropped-favicon-192x192.png"
+  }
+]

@@ -83,7 +83,10 @@
   .app-logo { width: 23px; height: 23px; object-fit: contain; }
   .pill-mark { width: 22px; height: 22px; margin-right: 9px; }
   .demo-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 18px; }
-  .scene-tabs { display: flex; flex-wrap: wrap; gap: 2px; }
+  .scene-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; font-size: 12px; color: var(--ink-2); }
+  .scene-tabs select { max-width: min(260px, 52vw); color: var(--ink); font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+  .doc-title { font-size: 22px; font-weight: 500; margin: 8px 0 14px; }
+  .doc-page { flex: 1; padding: 8px 14px; font-size: 16px; line-height: 1.65; white-space: pre-wrap; }
   .demo-controls button { font: inherit; font-size: 12px; border: 0; background: none; color: var(--ink-2); cursor: pointer; padding: 6px 9px; border-radius: 6px; }
   .demo-controls button[aria-pressed="true"] { background: var(--fill); color: var(--ink); }
   .demo-controls button:hover { background: var(--side); }
@@ -124,12 +127,11 @@
     <div class="stage">
       <div class="tag" id="tag"></div>
       <div class="win" id="win"></div>
-      <div class="demo-controls"><div class="scene-tabs" role="group" aria-label="Demo app">
-        <button data-scene="0">Telegram</button><button data-scene="1">Firefox</button><button data-scene="2">Discord</button><button data-scene="3">Outlook</button><button data-scene="4">Codex</button><button data-scene="5">Slack</button>
-      </div><button id="pause" aria-label="Pause demo">Pause</button></div>
+      <div class="demo-controls"><div class="scene-tabs"><label for="appPicker">Try an app</label><select id="appPicker" aria-label="Demo app"></select></div><button id="pause" aria-label="Pause demo">Pause</button></div>
     </div>
   </main>
 
+<script src="assets/apps.js"></script>
 <script>
 (() => {
   const scenes = [
@@ -146,7 +148,17 @@
     { app: "Slack", style: "casual", kind: "chat", title: "#launch", avatar: "#",
       before: ["can someone review the pricing page before 5?"], text: "On it, I'll push the fix after standup" },
   ];
-  const logos = {Telegram: "telegram.svg", Firefox: "firefox.svg", Discord: "discord.svg", Outlook: "outlook.svg", Codex: "codex.png", Slack: "slack.png"};
+  const originals = new Map(scenes.map(s => [s.app, s]));
+  const writing = {
+    docs: {style: "formal", kind: "doc", title: "Project notes", before: [], text: "The next draft should make the main idea clear. Start with what we learned, then explain what happens next."},
+    email: {style: "formal", kind: "mail", to: "Maya Chen", subject: "A quick update", text: "Hi Maya,\n\nThe draft is ready for your review. Let me know what you think when you have a moment.\n\nThanks,\nAlex"},
+    personal: {style: "very casual", kind: "chat", title: "Maya", before: ["still up for coffee?"], text: "yeah sounds good, i'll meet you there in ten"},
+    work: {style: "casual", kind: "chat", title: "Project team", before: ["Any update on the draft?"], text: "The first draft is ready. I'll share the link after the meeting"},
+    ai: {style: "very casual", kind: "chat", title: "New conversation", before: [], text: "help me turn these notes into a clear introduction and keep it in my own voice"},
+    code: {style: "casual", kind: "chat", title: "Project discussion", before: [], text: "Can we add a check for empty input before saving the changes?"},
+    other: {style: "casual", kind: "browser", title: "Project notes", before: ["A thought for later"], text: "Check the notes from today's meeting and send the next draft before Friday"},
+  };
+  scenes.splice(0, scenes.length, ...window.FLOW_APPS.map(a => ({...(originals.get(a.name) || writing[a.category]), app: a.name, logo: a.logo})));
   const $ = (s) => document.querySelector(s);
   const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
   const linux = /Linux/i.test(platform) && !/Android/i.test(navigator.userAgent);
@@ -175,6 +187,14 @@
   }
   pauseButton.onclick = () => { paused = !paused; reflectPause(); };
   reflectPause();
+  const picker = $("#appPicker");
+  const groups = {docs: "Writing and notes", email: "Email", personal: "Personal chats", work: "Work and projects", ai: "AI", code: "Code", other: "Browsers"};
+  for (const [category, label] of Object.entries(groups)) {
+    const group = document.createElement("optgroup"); group.label = label;
+    window.FLOW_APPS.forEach((app, index) => { if (app.category !== category) return; const option = document.createElement("option"); option.value = String(index); option.textContent = app.name; group.appendChild(option); });
+    picker.appendChild(group);
+  }
+  picker.onchange = () => { selected = +picker.value; generation++; paused = false; reflectPause(); };
   document.querySelectorAll("[data-scene]").forEach(button => button.onclick = () => {
     selected = +button.dataset.scene; generation++; paused = false; reflectPause();
   });
@@ -201,11 +221,13 @@
     tag.innerHTML = `<b>${sc.style}</b>`;
     win.style.animation = "none"; void win.offsetWidth; win.style.animation = "";
     if (sc.kind === "chat" || sc.kind === "browser") {
-      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${logos[sc.app]}" alt=""><span>${sc.app}</span><small>${sc.title}</small></div>
+      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>${sc.title}</small></div>
         <div class="body">${sc.before.map((m) => `<div class="msg">${esc(m)}</div>`).join("")}
         <div class="input"><span class="typed"></span><span class="caret"></span></div></div>`;
+    } else if (sc.kind === "doc") {
+      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>Draft</small></div><div class="body"><div class="doc-page"><div class="doc-title">${esc(sc.title)}</div><span class="typed"></span><span class="caret"></span></div></div>`;
     } else {
-      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${logos[sc.app]}" alt=""><span>${sc.app}</span><small>New message</small></div>
+      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>New message</small></div>
         <div class="body"><div class="field"><span>To</span>${sc.to}</div><div class="field"><span>Subject</span>${sc.subject}</div>
         <div class="mail"><span class="typed"></span><span class="caret"></span></div></div>`;
     }
@@ -213,6 +235,7 @@
   }
 
   async function play(sc, gen) {
+    picker.value = String(selected);
     const p = render(sc);
     document.querySelectorAll("[data-scene]").forEach(b => {
       b.setAttribute("aria-pressed", String(+b.dataset.scene === selected));

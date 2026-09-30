@@ -252,6 +252,7 @@
 <div class="tutorial" id="tutorial" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden></div>
 <div class="toast" id="toast"></div>
 
+<script src="assets/apps.js"></script>
 <script>
 (() => {
 const SHORTCUTS = { "ctrl+win": ["Ctrl", "Win"], "right ctrl": ["Right Ctrl"], "caps lock": ["Caps Lock"], "f8": ["F8"] };
@@ -265,7 +266,7 @@ const CATS = [
   ["docs", "Docs and notes", "Word, Notion, Obsidian, Google Docs"],
   ["other", "Everything else", "Browsers and all other apps"],
 ];
-const APP_NAMES = { codex: "Codex", slack: "Slack", discord: "Discord", telegram: "Telegram", "telegram-desktop": "Telegram", telegramdesktop: "Telegram", firefox: "Firefox", "firefox-esr": "Firefox", whatsapp: "WhatsApp", code: "VS Code", "ms-teams": "Teams", teams: "Teams", olk: "Outlook", chatgpt: "ChatGPT", obsidian: "Obsidian", windowsterminal: "Terminal", wt: "Terminal", winword: "Word", powerpnt: "PowerPoint" };
+const APP_NAMES = Object.fromEntries(window.FLOW_APPS.flatMap(a => a.aliases.map(k => [k, a.name])));
 const STYLE_EX = { formal: "Hey, are we still on for tonight? I can bring snacks.", casual: "Hey, are we still on for tonight? I can bring snacks", "very casual": "hey are we still on for tonight? i can bring snacks" };
 const $ = (s) => document.querySelector(s);
 const api = () => window.pywebview.api;
@@ -275,8 +276,8 @@ let M = { terms: [], fixes: [], scanned: null }, I = { words: 0, minutes_saved: 
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const kbd = (sc) => (SHORTCUTS[sc] || [sc]).map((k) => `<kbd>${k}</kbd>`).join("");
-const APP_LOGOS = {codex: "codex.png", chatgpt: "chatgpt.svg", slack: "slack.png", discord: "discord.svg", outlook: "outlook.svg", olk: "outlook.svg", hxoutlook: "outlook.svg", telegram: "telegram.svg", "telegram-desktop": "telegram.svg", telegramdesktop: "telegram.svg", "org.telegram.desktop": "telegram.svg", firefox: "firefox.svg", "firefox-esr": "firefox.svg", "org.mozilla.firefox": "firefox.svg", code: "vscode.png", teams: "teams.svg", "ms-teams": "teams.svg", winword: "word.svg", powerpnt: "powerpoint.svg", obsidian: "obsidian.svg"};
-const appName = (a) => { const k = (a || "").toLowerCase(); return APP_NAMES[k] || (k ? k[0].toUpperCase() + k.slice(1) : ""); };
+const APP_LOGOS = Object.fromEntries(window.FLOW_APPS.flatMap(a => a.aliases.map(k => [k, a.logo])));
+const appName = (a) => { const k = (a || "").toLowerCase().replace(/\.exe$/, ""); return APP_NAMES[k] || (k ? k[0].toUpperCase() + k.slice(1) : ""); };
 const mine = () => M.terms.filter((t) => ["you", "learned", "history", "project"].includes(t.source));
 const section = (title, aside = "") => `<div class="section"><h2>${title}</h2>${aside !== "" ? `<span class="aside">${aside}</span>` : ""}</div>`;
 
@@ -686,7 +687,7 @@ function render() {
   const counts = { home: items.length, dictionary: mine().length, snippets: S.snippets.length };
   for (const k of ["home", "dictionary", "snippets"]) $("#n-" + k).textContent = counts[k] || "";
   $("#footKeys").innerHTML = kbd(S.shortcut) + `<span style="margin-left:2px">to talk</span>`;
-  $("#platformLabel").textContent = `${S.platform === "linux" ? "Linux" : "Windows"} · ${S.speech_provider === "api" ? "API speech" : "On-device speech"}`;
+  $("#platformLabel").textContent = `${S.platform === "linux" ? "Linux" : "Windows"} · ${S.speech_provider === "api" ? "API speech" : "On-device speech"} · ${S.version ? `v${S.version}` : ""}`;
   if (document.activeElement && (document.activeElement.isContentEditable || document.activeElement.id === "q")) return;
   ({ home: renderHome, dictionary: renderDictionary, snippets: renderSnippets, settings: renderSettings })[view]();
 }

@@ -2,7 +2,7 @@
 ; Per-user install, no admin prompt. The speech model and GPU libraries download during first-run setup.
 
 #define AppName "Flow"
-#define AppVersion "1.2.0"
+#define AppVersion "1.3.0"
 
 [Setup]
 AppId={{6F1B5A0E-2C4D-4F3B-9E1A-3F10D1C7A7E0}
@@ -52,5 +52,5 @@ Filename: "{app}\Flow.exe"; Description: "Open Flow"; Flags: nowait postinstall 
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Flow.exe"; Flags: runhidden; RunOnceId: "StopFlow"
 
 [Messages]
-WelcomeLabel2=This installs Flow, private voice dictation that runs entirely on this PC.%n%nHold Ctrl + Win anywhere, talk, and let go. Your words appear where you're typing.
+WelcomeLabel2=This installs Flow voice dictation. Choose on-device speech or an optional transcription API during setup.%n%nHold Ctrl + Win anywhere, talk, and let go. Your words appear where you're typing.
 FinishedLabel=Flow is installed. It lives in your system tray; the first time it opens, it walks you through a quick setup.

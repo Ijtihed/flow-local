@@ -40,9 +40,14 @@ def run(headless=False):
     assert (paths.APP / "assets/logos/codex.png").is_file()
     for logo in ("telegram.svg", "firefox.svg", "teams.svg", "word.svg", "powerpoint.svg", "obsidian.svg", "vscode.png"):
         assert (paths.APP / "assets/logos" / logo).is_file()
+    from apps import CATALOG
+    from version import APP_VERSION
+    assert len(CATALOG) >= 50
+    for app in CATALOG:
+        assert (paths.APP / "assets/logos" / app["logo"]).is_file(), app["id"]
     import speech_api
     assert speech_api.validated_base("https://api.openai.com/v1") == "https://api.openai.com/v1"
-    result = {"ok": True, "platform": "windows" if system.IS_WIN else "linux",
+    result = {"ok": True, "version": APP_VERSION, "app_catalog": len(CATALOG), "platform": "windows" if system.IS_WIN else "linux",
                       "gpu": system.nvidia_gpu() if not headless else "not inspected",
                       "cuda_libraries": system.cuda_ready() if not headless else "not inspected",
                       "audio_devices": len(sounddevice.query_devices()) if not headless else "not inspected",

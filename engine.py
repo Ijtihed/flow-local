@@ -80,15 +80,15 @@ def add_cuda_dlls():
 
 
 from system import foreground_app
+from apps import category_for
 
 def app_category(app):
+    category = category_for(app)
+    if category != "other":
+        return category
     exe, title = app
-    t = title.lower()
-    for name, exes, titles in CATEGORIES:     # titles first: a Gmail tab in Firefox is email, not "browser"
-        if any(k in t for k in titles):
-            return name
     for name, exes, titles in CATEGORIES:
-        if exe in exes:
+        if exe.lower() in exes:
             return name
     return "other"
 

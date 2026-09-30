@@ -40,3 +40,228 @@ Official asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icon
 
 obsidian.svg
 Official asset: https://obsidian.md/images/obsidian-logo-gradient.svg
+
+Additional publisher assets for the 65-app catalog:
+
+googledocs.png
+Publisher page: https://docs.google.com
+Asset: https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico
+
+notion.png
+Publisher page: https://www.notion.com
+Asset: https://www.notion.com/front-static/favicon.ico
+
+onenote.svg
+Publisher page: https://www.microsoft.com
+Asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icons/en-us/m365-app-icons-fy26/OneNote-Icon-FY26.svg
+
+evernote.png
+Publisher page: https://evernote.com
+Asset: https://evernote.com/images/evernote-logo-serp.png
+
+joplin.png
+Publisher page: https://joplinapp.org
+Asset: https://joplinapp.org/images/favicon.png
+
+simplenote.png
+Publisher page: https://simplenote.com
+Asset: https://simplenote.com/wp-content/uploads/2020/07/cropped-icon_512x512.png?w=192
+
+standardnotes.png
+Publisher page: https://standardnotes.com
+Asset: https://standardnotes.com/apple-touch-icon.png
+
+scrivener.svg
+Publisher page: https://www.literatureandlatte.com
+Asset: https://www.literatureandlatte.com/wp-content/uploads/2023/05/favicon.svg
+
+typora.png
+Publisher page: https://typora.io
+Asset: https://typora.io/img/favicon-128.png
+
+libreoffice.png
+Publisher page: https://www.libreoffice.org
+Asset: https://www.libreoffice.org/favicon.ico
+
+onlyoffice.png
+Publisher page: https://www.onlyoffice.com
+Asset: https://static-site.onlyoffice.com/public/images/favicons/favicon325.png
+
+craft.png
+Publisher page: https://www.craft.do
+Asset: https://www.craft.do/favicons/light/light_192.png
+
+coda.png
+Publisher page: https://coda.io
+Asset: https://cdn.coda.io/icons/png/color/coda-192.png
+
+confluence.png
+Publisher page: https://www.atlassian.com/software/confluence
+Asset: https://confluence.atlassian.com/favicon.ico
+
+dropboxpaper.png
+Publisher page: https://www.dropbox.com/paper
+Asset: https://cfl.dropboxstatic.com/static/metaserver/static/images/favicon.ico
+
+overleaf.svg
+Publisher page: https://www.overleaf.com
+Asset: https://cdn.overleaf.com/favicon.svg
+
+grammarly.png
+Publisher page: https://www.grammarly.com
+Asset: https://static-web.grammarly.com/cms/master/public/favicon-32x32.png
+
+wordpress.png
+Publisher page: https://wordpress.com
+Asset: https://0.gravatar.com/blavatar/653166773dc88127bd3afe0b6dfe5ea7?s=114&d=https%3A%2F%2Fs1.wp.com%2Fi%2Fwebclip.png
+
+medium.svg
+Publisher page: https://medium.com
+Asset: https://raw.githubusercontent.com/Medium/medium-logos/master/03_Symbol/01_Black/SVG/Medium_Symbol_NoPadding.svg
+
+substack.svg
+Publisher page: https://substack.com
+Asset: https://substackcdn.com/icons/substack/icon.svg
+
+gmail.png
+Publisher page: https://mail.google.com
+Asset: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
+
+thunderbird.png
+Publisher page: https://www.thunderbird.net
+Asset: https://www.thunderbird.net/media/img/thunderbird/favicon-196.png
+
+protonmail.png
+Publisher page: https://proton.me/mail
+Asset: https://mail.proton.me/assets/apple-touch-icon-180x180.png
+
+fastmail.svg
+Publisher page: https://www.fastmail.com
+Asset: https://www.fastmail.com/favicon.svg?v=5843ac65
+
+superhuman.svg
+Publisher page: https://superhuman.com
+Asset: https://superhumanstatic.com/super-funnel/main/public/images/v4/favicons/superhuman-icon.svg
+
+yahoomail.png
+Publisher page: https://mail.yahoo.com
+Asset: https://s.yimg.com/cv/apiv2/default/hp/favicon.ico
+
+whatsapp.svg
+Publisher page: https://www.whatsapp.com
+Asset: https://static.whatsapp.net/rsrc.php/y1/r/FJbTMJqMap7.svg
+
+signal.svg
+Publisher page: https://signal.org
+Asset: https://signal.org/assets/images/favicon/favicon.svg
+
+messenger.png
+Publisher page: https://www.messenger.com
+Asset: https://static.xx.fbcdn.net/rsrc.php/yO/r/qa11ER6rke_.ico
+
+googlechat.png
+Publisher page: https://chat.google.com
+Asset: https://www.gstatic.com/images/branding/product/2x/chat_2020q4_48dp.png
+
+zoom.png
+Publisher page: https://www.zoom.com
+Asset: https://st1.zoom.us/homepage/20260929-1235/primary/favicon.ico
+
+linkedin.svg
+Publisher page: https://www.linkedin.com
+Asset: https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8
+
+reddit.png
+Publisher page: https://www.reddit.com
+Asset: https://www.reddit.com/favicon.ico
+
+instagram.png
+Publisher page: https://www.instagram.com
+Asset: https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp
+
+claude.png
+Publisher page: https://claude.ai
+Asset: https://claude.ai/favicon.ico
+
+gemini.png
+Publisher page: https://gemini.google.com
+Asset: https://www.gstatic.com/lamda/images/gemini_sparkle_4g_512_lt_f94943af3be039176192d.png
+
+copilot.svg
+Publisher page: https://copilot.microsoft.com
+Asset: https://copilot.microsoft.com/static/cmc/favicon.svg
+
+perplexity.png
+Publisher page: https://www.perplexity.ai
+Asset: https://www.perplexity.ai/favicon.ico
+
+cursor.svg
+Publisher page: https://cursor.com
+Asset: https://cursor.com/marketing-static/favicon-light.svg
+
+sublime.png
+Publisher page: https://www.sublimetext.com
+Asset: https://www.sublimetext.com/images/icon.png
+
+pycharm.png
+Publisher page: https://www.jetbrains.com/pycharm
+Asset: https://resources.jetbrains.com/storage/products/pycharm/img/meta/pycharm_logo_300x300.png
+
+github.svg
+Publisher page: https://github.com
+Asset: https://github.githubassets.com/assets/pinned-octocat-093da3e6fa40.svg
+
+gitlab.png
+Publisher page: https://about.gitlab.com
+Asset: https://about.gitlab.com/images/ico/favicon-192x192.png
+
+linear.svg
+Publisher page: https://linear.app
+Asset: https://linear.app/static/favicon.svg?v=2
+
+asana.png
+Publisher page: https://asana.com
+Asset: https://asana.com/assets/img/brand/asana-logo-favicon.ico
+
+trello.png
+Publisher page: https://trello.com
+Asset: https://www.trello.com/favicon.ico
+
+clickup.png
+Publisher page: https://clickup.com
+Asset: https://clickup.com/favicons/favicon-32x32.png
+
+todoist.svg
+Publisher page: https://www.todoist.com
+Asset: https://www.todoist.com/static/safari-pinned-tab.svg
+
+chrome.svg
+Publisher page: https://www.google.com/chrome
+Asset: https://www.google.com/chrome/static/images/chrome-logo-m100.svg
+
+edge.png
+Publisher page: https://www.microsoft.com/edge
+Asset: https://edgecdn-embza6g8cacagcbn.z01.azurefd.net/welcome/static/favicon.png
+
+brave.png
+Publisher page: https://brave.com
+Asset: https://brave.com/static-assets/images/cropped-brave_appicon_release-192x192.png
+
+opera.svg
+Publisher page: https://www.opera.com
+Asset: https://cdn-production-opera-website.operacdn.com/staticfiles/assets/images/favicon/opera/safari-pinned-tab.2ff3aa479bec.svg
+
+vivaldi.png
+Publisher page: https://vivaldi.com
+Asset: https://vivaldi.com/wp-content/uploads/cropped-favicon-192x192.png
+
+vscode.png (current product mark, replaces the historical Linux resource)
+Asset: https://code.visualstudio.com/assets/favicon.ico
+
+confluence.svg (specific product mark)
+Publisher: Atlassian @atlaskit/logo
+Asset: https://registry.npmjs.org/@atlaskit/logo/-/logo-23.3.1.tgz (package/dist/esm/artifacts/logo-components/confluence/icon.js)
+
+scrivener.svg (specific product mark; exact icon-scrivener font outline)
+Publisher page: https://www.literatureandlatte.com/scrivener/overview
+Asset: https://www.literatureandlatte.com/wp-content/themes/toast/assets/fonts/Icons/icons.ttf (icon-scrivener glyph)

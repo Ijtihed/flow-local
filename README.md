@@ -54,6 +54,7 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 
 - **Your engine choice.** Run Whisper locally, or use an API with your own key. Cleanup stays local.
 - **Learns you.** Names, jargon and project names get spelled right. It reads your Obsidian vault (optional) and learns from every word you fix.
+- **65 familiar app logos.** Writing and notes, email, chats, AI tools, code editors and browsers share one bundled app catalog. Desktop process names and branded browser-tab titles identify the app for history and writing style. The website automatically cycles through all 65 previews; use the app picker to jump directly to one. These are illustrative previews, not endorsements or provider integrations. Dictation works in other apps too, wherever the OS can paste text.
 - **Matches the app.** Casual in Discord, formal in email, your own style everywhere. Texting shortcuts like idk and tbh in chats if you want them.
 - **Cleans up.** Removes ums and handles "at 2, actually 3". It can only delete words, never invent them.
 - **Many languages.** Switch between languages mid conversation.
@@ -138,3 +139,5 @@ Your data lives in `%APPDATA%\Flow` on Windows and `$XDG_DATA_HOME/flow` (normal
 ## License
 
 MIT
+
+After editing `assets/apps.json`, run `python tools/sync_apps.py` to sync the website catalog and logos. Publisher asset sources are recorded in `assets/logos/SOURCES.txt`.

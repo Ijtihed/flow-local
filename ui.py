@@ -7,6 +7,8 @@ from pathlib import Path
 
 from system import IS_WIN, startup_enabled, set_startup
 import icons
+from apps import canonical_app
+from version import APP_VERSION
 import paths
 import setup_tasks
 import vault
@@ -67,6 +69,7 @@ class Api:
     # ---- settings
     def settings(self):
         s = paths.load_settings()
+        s["version"] = APP_VERSION
         s["startup"] = self._startup()
         s["platform"] = "windows" if IS_WIN else "linux"
         s["session"] = __import__("os").environ.get("XDG_SESSION_TYPE", "x11")
@@ -164,7 +167,7 @@ class Api:
         items = read_history()
         words = sum(i.get("words", 0) for i in items)
         secs = sum(i.get("seconds", 0) for i in items)
-        apps = Counter(i["app"] for i in items if i.get("app") and i["app"].lower() not in NOT_APPS)
+        apps = Counter(canonical_app(i["app"]) for i in items if i.get("app") and i["app"].lower() not in NOT_APPS)
         today = datetime.now().date().isoformat()
         dates = {i.get("ts", "")[:10] for i in items if i.get("ts")}
         return {"words": words, "minutes_saved": round(max(0, words / 40 - secs / 60)),  # vs typing at 40 wpm

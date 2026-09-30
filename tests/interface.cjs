@@ -27,6 +27,7 @@ function apiFixture(platform='windows', fresh=false) {
   }};
 }
 function dom(html, extra={}) {
+  html=html.replace('<script src="assets/apps.js"></script>',()=>'<script>'+read('assets/apps.js')+'</script>');
   const errors=[],vc=new VirtualConsole(); vc.on('jsdomError',e=>errors.push(e));
   let clock;
   const page=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'http://127.0.0.1:9000/',virtualConsole:vc,
@@ -88,6 +89,9 @@ async function setup(platform) {
 }
 async function website(platform,ua) {
   const ctx=dom(read('site/index.html'),{platform,ua});
+  // Synchronous clock steps + microtask drains avoid the host timer latency
+  // of tickAsync for every 50 ms polling timer in a full 65-app cycle.
+  const advance=async ms=>{for(let elapsed=0;elapsed<ms;elapsed+=50){ctx.clock.tick(50);await Promise.resolve();await Promise.resolve();}};
   assert.equal(ctx.d.querySelector('#pause').textContent,'Pause');
   assert.equal(ctx.d.querySelector('.bar span').textContent,'Telegram');
   assert(!ctx.d.querySelector('#tag').textContent.includes('dictation demo'));
@@ -95,13 +99,22 @@ async function website(platform,ua) {
   if(platform==='Win32') assert(ctx.d.querySelector('#osHint').textContent.includes('Windows detected'));
   if(platform==='MacIntel') assert(ctx.d.querySelector('#osHint').textContent.includes('supported computer'));
   const seen=new Set();
-  for(let i=0;i<45;i++){await ctx.clock.tickAsync(1200);seen.add(ctx.d.querySelector('.bar span').textContent);}
-  assert.deepEqual([...seen].sort(),['Codex','Discord','Firefox','Outlook','Slack','Telegram'].sort());
+  const catalog=JSON.parse(read('assets/apps.json'));
+  assert.equal(ctx.d.querySelectorAll('#appPicker option').length,catalog.length);
+  assert(catalog.length>=50);
+  // Advance enough simulated time to see every app without clicking the picker.
+  for(let i=0;i<650;i++){await advance(1200);seen.add(ctx.d.querySelector('.bar span').textContent);}
+  assert.deepEqual([...seen].sort(),catalog.map(a=>a.name).sort());
+  const docs=catalog.findIndex(a=>a.id==='googledocs');
+  change(ctx,'appPicker',String(docs));await advance(200);
+  assert.equal(ctx.d.querySelector('.bar span').textContent,'Google Docs');
+  assert(ctx.d.querySelector('.doc-page'));
+  assert.equal(ctx.d.querySelector('.app-logo').getAttribute('src'),'assets/logos/'+catalog[docs].logo);
   for(const img of ctx.d.querySelectorAll('img')) assert(fs.existsSync(root+'/site/'+img.getAttribute('src')));
-  button(ctx,'Pause').click();const current=ctx.d.querySelector('.bar span').textContent;await ctx.clock.tickAsync(20000);
+  button(ctx,'Pause').click();const current=ctx.d.querySelector('.bar span').textContent;await advance(20000);
   assert.equal(ctx.d.querySelector('.bar span').textContent,current);
-  button(ctx,'Play').click();await ctx.clock.tickAsync(12000);assert.equal(ctx.d.querySelector('#pause').textContent,'Pause');
+  button(ctx,'Play').click();await advance(12000);assert.equal(ctx.d.querySelector('#pause').textContent,'Pause');
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));ctx.close();checks+=9;
-  console.log(platform+' website: OS routing, automatic six-app cycle, pause/resume PASS');
+  console.log(platform+' website: OS routing, automatic '+catalog.length+'-app cycle, picker, pause/resume PASS');
 }
 (async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await website('Win32');await website('Linux x86_64');await website('MacIntel');console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});

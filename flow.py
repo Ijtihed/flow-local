@@ -19,6 +19,7 @@ import numpy as np
 from PIL import Image
 
 import icons
+from apps import resolve_app, display_name
 import learn
 import paths
 import setup_tasks
@@ -315,12 +316,12 @@ class Flow:
 
     def save(self, text, seconds, lang, latency):
         entry = {"ts": datetime.now().isoformat(timespec="seconds"), "text": text, "seconds": round(seconds, 2),
-                 "words": len(text.split()), "lang": lang, "app": self.target_app[0],
+                 "words": len(text.split()), "lang": lang, "app": resolve_app(self.target_app),
                  "engine": self.engine.last_path, "latency": latency, "category": getattr(self, "category", "other")}
         with HISTORY.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         try:
-            voicenotes.save(text, self.target_app[0].title() if self.target_app[0] else "", self.settings)
+            voicenotes.save(text, display_name(resolve_app(self.target_app)), self.settings)
         except Exception as e:
             print("voice notes:", e)
 
