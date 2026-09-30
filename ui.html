@@ -220,9 +220,6 @@
   .tour-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
   .tour-foot .btn { min-width: 150px; }
   .practice-note { font-size: 11px !important; margin: 12px 0 0; line-height: 1.45; }
-  .record-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0 0; }
-  .record-row span { font-size: 12px; color: var(--ink-2); }
-  .record-row button.active { background: #b92436; }
   @keyframes tour-in { from { opacity: 0; transform: translateY(16px) scale(.96); } }
   @keyframes tour-press { 25%,65% { transform: translateY(3px); background: #F3F3F1; } }
   @keyframes tour-wave { to { height: 24px; } }
@@ -365,7 +362,6 @@ function renderHome() {
   const top = I.apps[0] ? I.apps[0][1] : 1;
   let html = `<h1 id="greeting">${esc(g.title)}${first ? `, <em>${esc(first)}</em>` : ""}</h1>
     <p class="lede">Hold ${kbd(S.shortcut)} and talk. Let go, and it's typed.</p>
-    <div class="record-row"><button class="btn" id="recordButton" disabled>Record</button><span id="recordCaption" role="status">Getting ready…</span></div>
     <div class="mood-line"><span id="greetingHint">${esc(g.hint)}</span><select id="mood" aria-label="Your mood">${[["auto", "Auto"], ["focused", "Focused"], ["relaxed", "Relaxed"], ["low-energy", "Low energy"]].map(([id,label]) => `<option value="${id}" ${S.mood === id ? "selected" : ""}>${label}</option>`).join("")}</select></div>
     <div class="stats">
       <div class="stat"><b data-to="${I.words}">0</b><span>words dictated</span></div>
@@ -397,8 +393,6 @@ function renderHome() {
   $("#view").innerHTML = html;
   if (!renderHome.animated) { document.querySelectorAll(".stat b").forEach(countUp); renderHome.animated = true; }
   else document.querySelectorAll(".stat b").forEach((b) => (b.textContent = (+b.dataset.to).toLocaleString()));
-  $("#recordButton").onclick = async e => { e.currentTarget.disabled = true; try { if (e.currentTarget.dataset.recording === "true") await api().record_stop(); else await api().record_start(); } catch (error) {toast(error.message || String(error));} await refreshRecording(); };
-  refreshRecording();
   const qi = $("#q");
   $("#mood").onchange = async (e) => { S.mood = e.target.value; greetingVisit++; await api().save_settings({mood: S.mood}); updateGreeting(); };
   qi.oninput = () => { query = qi.value; const pos = qi.selectionStart; renderHome(); const n = $("#q"); n.focus(); n.setSelectionRange(pos, pos); };
@@ -553,7 +547,6 @@ function renderSettings() {
     <p class="note">${S.speech_provider === "api" ? `API speech · ${esc(S.api_model)}` : engine}</p>
     ${S.speech_error ? `<p class="form-error">${esc(S.speech_error)}</p>` : ""}
     <div id="engineForm"></div><button class="btn" id="saveEngine">Use this engine</button>${S.api_key_saved ? `<button class="link" id="forgetKey" style="margin-left:14px">Forget API key</button>` : ""}
-    <div class="row"><div class="l"><b>Speech check</b><small>Known audio is checked each time the local engine starts. API speech uses the spoken practice.</small></div><button class="btn ghost" id="speechReport">View report</button></div>
     ${section("Dictation")}
     ${S.platform === "linux" && S.session === "wayland" ? `<p class="note">Wayland shortcuts need readable keyboard devices. Automatic pasting needs uinput or a supported wtype compositor; otherwise press Ctrl+V yourself. See the Linux setup in the README.</p>` : ""}
     <div class="row"><div class="l"><b>Shortcut</b><small>Hold to talk, let go to paste. Double-tap, or tap Space while holding, for hands-free. Esc cancels.</small></div><select id="s-shortcut">${opt}</select></div>
@@ -576,7 +569,6 @@ function renderSettings() {
     <div class="row"><div class="l"><b>Open at sign-in</b><small>Flow waits in the tray, ready when you are.</small></div><button class="switch ${S.startup ? "on" : ""}" data-toggle="startup"></button></div>
     <div class="row"><div class="l"><b>History</b><small>${items.length} dictation${items.length === 1 ? "" : "s"} saved on this PC.</small></div><button class="danger ${confirmClear ? "confirm" : ""}" id="s-clear">${confirmClear ? "Click again to clear" : "Clear"}</button></div>`;
   layoutSegs();
-  $("#speechReport").onclick = showSpeechReport;
   let config = speechConfig();
   const drawEngine = () => { $("#engineForm").innerHTML = speechForm("settingsSpeech", config, S.speech_models || [], S.gpu ? "large-v3" : "small"); bindSpeech("settingsSpeech", config, drawEngine); };
   drawEngine();
@@ -752,20 +744,7 @@ async function finishTutorial() {
   S.tutorial_seen = true; S.tutorial_version = 2;
   if (tourFocus && tourFocus.isConnected) tourFocus.focus();
 }
-window.addEventListener("pagehide", () => { if (!$("#tutorial").hidden) api().practice_cancel(); api().record_cancel(); });
-let recordingPolling = false;
-async function refreshRecording() {
-  if (recordingPolling || !$("#recordButton") || !$("#tutorial").hidden) return;
-  recordingPolling = true;
-  try {
-    const status = await api().recording_status();
-    const button = $("#recordButton"), caption = $("#recordCaption"); if (!button) return;
-    button.dataset.recording = String(status.recording); button.classList.toggle("active", !!status.recording);
-    button.textContent = status.recording ? "Finish" : status.busy ? "Thinking…" : "Record";
-    button.disabled = !status.ready || !!status.busy;
-    caption.textContent = status.recording ? `Recording · ${Math.floor(status.elapsed || 0)}s` : status.busy ? `${status.phase === "polishing" ? "Polishing" : "Thinking"} · ${Math.floor(status.elapsed || 0)}s` : "Save to Recent";
-  } catch (_) {} finally {recordingPolling = false;}
-}
+window.addEventListener("pagehide", () => { if (!$("#tutorial").hidden) api().practice_cancel(); });
 async function save(patch, msg = "Saved") { await api().save_settings(patch); S = await api().settings(); render(); toast(msg); }
 function render() {
   const counts = { home: items.length, dictionary: mine().length, snippets: S.snippets.length };
@@ -837,7 +816,6 @@ async function init() {
   }
   await boot();
   if (S.onboarded && S.tutorial_version !== 2) showTutorial();
-  setInterval(refreshRecording, 250);
   await refreshDiagnostics(); setInterval(refreshDiagnostics, 2500);
   setInterval(updateGreeting, 60000);
 }

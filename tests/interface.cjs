@@ -81,11 +81,9 @@ async function ui(platform) {
   assert(ctx.d.querySelector('#tourHint').textContent.includes(platform==='linux'?'Super':'Win'));
   button(ctx,'Start using Flow').click();await ctx.clock.tickAsync(20);
   assert(f.S.tutorial_seen);assert.equal(ctx.d.querySelector('#tutorial').hidden,true);
-  ctx.d.querySelector('#recordButton').click();await ctx.clock.tickAsync(250);
-  assert.equal(ctx.d.querySelector('#recordButton').textContent,'Finish');
-  ctx.d.querySelector('#recordButton').click();await ctx.clock.tickAsync(250);
-  assert(ctx.d.querySelector('#recordCaption').textContent.includes('Thinking'));
-  Object.assign(f.recording,{recording:false,busy:false,phase:'idle'});await ctx.clock.tickAsync(250);
+  assert(!button(ctx,'Record'),'Home uses the global dictation shortcut');
+  assert(ctx.d.querySelector('.lede').textContent.includes('Hold'));
+  assert(ctx.d.querySelector('#healthNotice').hidden,'Successful checks remain silent');
   assert.equal(ctx.d.querySelector('.app-name img').getAttribute('src'),'assets/logos/telegram.svg');
   assert.equal(ctx.d.querySelectorAll('.app-name img')[1].getAttribute('src'),'assets/logos/firefox.svg');
   change(ctx,'mood','relaxed');await ctx.clock.tickAsync(20);
@@ -98,6 +96,8 @@ async function ui(platform) {
   input(ctx,'s-trigger','my email');input(ctx,'s-text','alex@example.com');button(ctx,'Add shortcut').click();await ctx.clock.tickAsync(20);
   assert.deepEqual(f.S.snippets,[{trigger:'my email',text:'alex@example.com'}]);
   ctx.d.querySelector('[data-view="settings"]').click();
+  assert(!button(ctx,'View report'));
+  assert(!ctx.d.querySelector('#view').textContent.includes('Known audio is checked'));
   change(ctx,'settingsSpeech-model','large-v3-turbo');button(ctx,'Use this engine').click();await ctx.clock.tickAsync(20);
   assert.equal(f.calls.at(-1).model,'large-v3-turbo');
   ctx.d.querySelector('[data-provider="api"]').click();button(ctx,'Use this engine').click();await ctx.clock.tickAsync(20);
