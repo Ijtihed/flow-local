@@ -84,7 +84,7 @@ class PillBase:
                 n, gap, bw = 11, 4.8 * k, 2.5 * k
                 x0 = M + 172*k - (n - 1) * gap / 2
                 for i in range(n):
-                    lv = levels[-n + i] if len(levels) >= n else 0.0
+                    lv = levels[-1] if levels else 0.0
                     env = 1 - abs(i - (n - 1) / 2) / ((n - 1) / 2) * 0.45
                     bh = (3 + 19 * min(1.0, lv) * env) * k
                     x = x0 + i * gap

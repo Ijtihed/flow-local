@@ -251,6 +251,8 @@ class Flow:
     def start(self, mode):
         import sounddevice as sd
         self.chunks, self.level = [], 0.0
+        self.visual_level = 0
+        self.levels.clear()
         self.target_app = foreground_app()
 
         def cb(indata, frames, t, status):
@@ -517,7 +519,11 @@ class Flow:
 
         self.t += 1 / 30
         if self.recording:
-            self.levels.append(min(1.0, (self.level * 14) ** 0.8))
+            target = min(1.0, (self.level * 14) ** 0.8)
+            self.visual_level = getattr(self, "visual_level", 0) + .18 * (target - getattr(self, "visual_level", 0))
+            self.levels.append(self.visual_level)
+        else:
+            self.visual_level = 0
         if self.state != "idle":
             self.appear = min(1.0, self.appear + 0.12)
             locked = self.recording and self.mode == "hands"
@@ -531,7 +537,7 @@ class Flow:
             try:
                 control.publish({"phase": self.state if self.ready else "error" if self._last_error else "loading", "ready": self.ready,
                                  "recording": self.recording, "busy": self.busy,
-                                 "level": min(1, (self.level * 14) ** .8) if self.recording else 0,
+                                 "level": self.visual_level if self.recording else 0,
                                  "elapsed": round(max(0, now - (self.record_started if self.recording else self.state_started)), 1),
                                  "practice_id": self.practice["id"] if self.practice else None, "error": self._last_error})
             except OSError:

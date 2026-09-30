@@ -136,6 +136,7 @@ async function website(platform,ua) {
   assert.equal(ctx.d.querySelector('.bar span').textContent,'Linear');
   assert.equal(ctx.d.querySelector('footer').textContent.trim(),'Made by Ijtihed');
   assert(ctx.d.querySelector('footer a[aria-label="Flow on GitHub"] img'));
+  assert(!ctx.d.querySelector('.caret').getAttribute('style'));
   assert(!ctx.d.querySelector('#tag').textContent.includes('dictation demo'));
   assert(!ctx.d.querySelector('#osHint'));
   assert(!ctx.d.body.textContent.includes('Windows 10 or 11'));
@@ -145,16 +146,22 @@ async function website(platform,ua) {
   if(platform==='Win32') assert(ctx.d.querySelector('#download').href.endsWith('FlowSetup.exe'));
   if(platform==='MacIntel') assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
   const seen=new Set(), order=[];
+  let recordingInputHeight,typingInputHeight,sawContinuousTyping=false;
   for(let i=0;i<110;i++) {
     await advance(500);
     const app=ctx.d.querySelector('.bar span').textContent;
     seen.add(app); if(order.at(-1)!==app) order.push(app);
     const typed=ctx.d.querySelector('.typed');
     assert.equal(typed.children.length,0,'Text must be one continuous node');
+    if(app==='Linear' && ctx.d.querySelector('.win').classList.contains('is-typing')) {
+      sawContinuousTyping=true;typingInputHeight=ctx.w.getComputedStyle(ctx.d.querySelector('.input')).height;
+      assert.equal(ctx.w.getComputedStyle(ctx.d.querySelector('.caret')).animationName,'');
+    } else if(app==='Linear') recordingInputHeight=ctx.w.getComputedStyle(ctx.d.querySelector('.input')).height;
     for(const img of ctx.d.querySelectorAll('img')) assert(fs.existsSync(root+'/site/'+img.getAttribute('src')));
   }
   assert.deepEqual([...seen].sort(),['ChatGPT','Gmail','Linear']);
   assert.deepEqual(order.slice(0,4),['Linear','Gmail','ChatGPT','Linear']);
+  assert(sawContinuousTyping);assert.equal(typingInputHeight,recordingInputHeight);
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));ctx.close();checks+=9;
   console.log(platform+' website: OS routing, Linear-first 3-app cycle, footer, continuous text, no demo controls PASS');
 }

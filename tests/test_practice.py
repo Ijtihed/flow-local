@@ -133,3 +133,14 @@ class Practice(unittest.TestCase):
         f = self.fixture();f.mode="compose";f.settings["learn"]=True
         f.events.put(("done","A new thought.",1.2,"en",.4));f.tick()
         f.paste.assert_not_called();f.save.assert_called_once()
+
+    def test_audio_meter_smooths_changes_without_stalling_recording(self):
+        f=self.fixture();f.recording=True;f.mode='hands';f.record_started=time.time();f.level=.05
+        target=min(1,(f.level*14)**.8)
+        f.tick();first=f.levels[-1]
+        self.assertGreater(first,0);self.assertLess(first,target)
+        for _ in range(8): f.tick()
+        peak=f.levels[-1];self.assertGreater(peak,first);self.assertLess(peak,target)
+        f.level=0;f.tick()
+        self.assertGreater(f.levels[-1],0);self.assertLess(f.levels[-1],peak)
+        self.assertTrue(f.recording)

@@ -66,18 +66,18 @@
   .field span { color: var(--ink-3); width: 56px; }
   .mail { flex: 1; padding-top: 14px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
   .typed { white-space: pre-wrap; }
-  .caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -3px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
+  .caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -3px; margin-left: 1px; visibility: hidden; }
+  .is-typing .caret { visibility: visible; }
 
-  .pill { position: absolute; left: 50%; bottom: 18px; transform: translate(-50%, 16px) scale(.9); opacity: 0; height: 40px; padding: 0 18px; border-radius: 20px; background: #fff; border: 1px solid rgba(0,0,0,.08);
-    box-shadow: 0 10px 30px rgba(0,0,0,.14); display: flex; align-items: center; gap: 4px; transition: all .35s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+  .pill { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); opacity: 0; height: 40px; padding: 0 18px; border-radius: 20px; background: #fff; border: 1px solid rgba(0,0,0,.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,.14); display: flex; align-items: center; gap: 4px; transition: opacity .25s ease; pointer-events: none; }
   .pill-label { font-size: 12px; font-weight: 500; margin: 0 12px 0 2px; }
-  .pill.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  .pill i { width: 3px; height: 6px; border-radius: 3px; background: var(--ink); }
-  .pill.listen i { animation: talk .5s ease-in-out infinite alternate; }
-  .pill.think i { animation: think 1s ease-in-out infinite; opacity: .5; }
-  @keyframes talk { from { height: 4px; } to { height: var(--h, 20px); } }
-  @keyframes think { 50% { height: 9px; opacity: 1; } }
+  .pill.show { opacity: 1; }
+  .pill i { width: 3px; height: var(--h, 16px); border-radius: 3px; background: var(--ink); transform: scaleY(.35); transform-origin: center; }
+  .pill.listen i { animation: talk 1.3s ease-in-out infinite alternate; }
+  .pill.think i { height: 5px; transform: none; animation: think 1.6s ease-in-out infinite; opacity: .35; }
+  @keyframes talk { from { transform: scaleY(.35); } to { transform: scaleY(.9); } }
+  @keyframes think { 50% { opacity: .85; } }
 
   .app-logo { width: 23px; height: 23px; object-fit: contain; }
   .pill-mark { width: 22px; height: 22px; margin-right: 9px; }
@@ -109,7 +109,7 @@
   .body { padding: 28px; gap: 14px; }
   .msg, .input, .mail, .doc-page { font-size: 19px; line-height: 1.5; }
   .msg { border-radius: 18px; padding: 15px 19px; }
-  .input { min-height: 62px; border-radius: 16px; padding: 16px 19px; }
+  .input { height: 138px; flex: none; overflow: hidden; border-radius: 16px; padding: 16px 19px; }
   .doc-title { font-size: 28px; }
   .pill { height: 46px; padding-inline: 15px; bottom: 22px; border-radius: 24px; box-shadow: 0 8px 28px #00000018; }
   .pill i { width: 2.5px; }
@@ -191,8 +191,8 @@
     for (let i = 0; i < 13; i++) {
       const b = document.createElement("i");
       const env = 1 - Math.abs(i - 6) / 6 * 0.5;
-      b.style.setProperty("--h", (8 + Math.random() * 14 * env).toFixed(0) + "px");
-      b.style.animationDelay = (-Math.random() * 0.5).toFixed(2) + "s";
+      b.style.setProperty("--h", (8 + 16 * env).toFixed(0) + "px");
+      b.style.animationDelay = (-i * .09).toFixed(2) + "s";
       p.appendChild(b);
     }
     return p;
@@ -227,11 +227,13 @@
     p.classList.replace("listen", "think"); await wait(650);
     p.classList.remove("show");
     const out = win.querySelector(".typed");
+    win.classList.add("is-typing");
     // One continuous text node, without separate word animations or chunks.
     for (let i=1; i<=sc.text.length; i++) {
       out.textContent = sc.text.slice(0,i);
-      await wait(18);
+      await wait(45);
     }
+    win.classList.remove("is-typing");
     await wait(3500);
   }
   (async () => {
