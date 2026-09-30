@@ -20,6 +20,9 @@ DEFAULT_STYLES = {"personal": "very casual", "work": "casual", "email": "formal"
 DEFAULTS = {"shortcut": "ctrl+win", "styles": DEFAULT_STYLES, "languages": ["en"], "snippets": [],
             "cleanup": True, "learn": True, "texting": True, "model": "large-v3", "name": "",
             "voice_notes": {"enabled": False, "folder": ""}, "onboarded": False}
+DEFAULTS.update({"speech_provider": "local", "api_model": "gpt-transcribe",
+                 "api_base": "https://api.openai.com/v1", "api_consent": False,
+                 "mood": "auto", "tutorial_seen": False})
 
 
 def load_settings():
@@ -40,12 +43,20 @@ def load_settings():
 
 def save_settings(patch):
     import json
+    import tempfile
     cur = load_settings()
     cur.update(patch)
     cur.pop("style_chat", None)
     cur.pop("style_other", None)
     DATA.mkdir(parents=True, exist_ok=True)
-    SETTINGS.write_text(json.dumps(cur, indent=2, ensure_ascii=False), "utf-8")
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=DATA, prefix="settings-",
+                                     suffix=".tmp", delete=False) as f:
+        json.dump(cur, f, indent=2, ensure_ascii=False)
+        tmp = Path(f.name)
+    try:
+        tmp.replace(SETTINGS)
+    finally:
+        tmp.unlink(missing_ok=True)
     return cur
 
 

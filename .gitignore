@@ -9,3 +9,4 @@ data/
 Flow.bat
 *.log
 .vercel
+tests/node_modules/

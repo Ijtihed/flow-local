@@ -11,6 +11,7 @@ import paths
 import setup_tasks
 import vault
 import voicenotes
+import speech_api
 from memory import Memory
 from paths import HISTORY, MEMORY
 
@@ -70,22 +71,85 @@ class Api:
         s["platform"] = "windows" if IS_WIN else "linux"
         s["session"] = __import__("os").environ.get("XDG_SESSION_TYPE", "x11")
         s["auto_learn"] = IS_WIN
+        s["native_window"] = hasattr(self, "_window")
+        try:
+            s["api_key_saved"] = bool(speech_api.get_key())
+        except Exception:
+            s["api_key_saved"] = False
+        s["speech_models"] = [{"id": k, "gb": v, "ready": bool(setup_tasks.find_model(k))}
+                              for k, v in setup_tasks.MODEL_SIZE_GB.items()]
         s["ollama"] = setup_tasks.ollama_status()
         try:
             s["status"] = json.loads((paths.DATA / "status.json").read_text("utf-8"))
         except Exception:
             s["status"] = {}
+        try:
+            err = json.loads((paths.DATA / "speech-error.json").read_text("utf-8"))
+            import time
+            s["speech_error"] = err["message"] if time.time() - err["ts"] < 300 else ""
+        except Exception:
+            s["speech_error"] = ""
         gpu = setup_tasks.nvidia_gpu()
         s["gpu"] = gpu[0] if gpu else None
         s["cuda"] = setup_tasks.cuda_ready() if gpu else False
         return s
 
     def save_settings(self, patch):
+        if any(k in patch for k in ("speech_provider", "model", "api_base", "api_model", "api_consent", "api_key")):
+            raise ValueError("Use the speech engine form to change models or API settings.")
+        if "mood" in patch and patch["mood"] not in ("auto", "focused", "relaxed", "low-energy"):
+            raise ValueError("Choose a supported mood.")
         if "startup" in patch:
             self._set_startup(bool(patch.pop("startup")))
         cur = paths.save_settings(patch)
         if "languages" in patch:
             self._memory().set_languages(cur["languages"])
+
+    def configure_speech(self, config):
+        provider = config.get("provider")
+        if provider == "local":
+            model = config.get("model", "large-v3")
+            if model not in setup_tasks.MODEL_REPOS:
+                raise ValueError("Choose a supported local speech model.")
+            if paths.load_settings().get("onboarded") and not setup_tasks.find_model(model):
+                raise ValueError("Download this speech model before switching to it.")
+            paths.save_settings({"speech_provider": "local", "model": model, "api_consent": False,
+                                 "speech_revision": __import__("time").time_ns()})
+        elif provider == "api":
+            if config.get("consent") is not True:
+                raise ValueError("Accept the API data notice before enabling API speech.")
+            base = speech_api.validated_base(config.get("base", ""))
+            model = speech_api.validated_model(config.get("model", ""))
+            key = config.get("key", "").strip()
+            old = paths.load_settings()
+            if not key and base != old.get("api_base"):
+                raise ValueError("Enter the key for this provider when changing the API URL.")
+            if not key and not speech_api.get_key():
+                raise ValueError("Enter your speech API key.")
+            if key:
+                speech_api.save_key(key)
+            paths.save_settings({"speech_provider": "api", "api_base": base, "api_model": model,
+                                 "api_consent": True, "speech_revision": __import__("time").time_ns()})
+        else:
+            raise ValueError("Choose local or API speech.")
+        return True
+
+    def forget_api_key(self):
+        (paths.DATA / "speech-key").unlink(missing_ok=True)
+        paths.save_settings({"speech_provider": "local", "api_consent": False})
+        return True
+
+    def window_action(self, action):
+        if not hasattr(self, "_window"):
+            return False
+        if action == "close":
+            self._window.destroy()
+        elif action == "minimize":
+            self._window.minimize()
+        elif action == "maximize":
+            self._maximized = not getattr(self, "_maximized", False)
+            self._window.maximize() if self._maximized else self._window.restore()
+        return True
 
     def _startup(self):
         return startup_enabled()
@@ -96,11 +160,16 @@ class Api:
 
     # ---- insights for Home
     def insights(self):
+        from datetime import datetime
         items = read_history()
         words = sum(i.get("words", 0) for i in items)
         secs = sum(i.get("seconds", 0) for i in items)
         apps = Counter(i["app"] for i in items if i.get("app") and i["app"].lower() not in NOT_APPS)
+        today = datetime.now().date().isoformat()
+        dates = {i.get("ts", "")[:10] for i in items if i.get("ts")}
         return {"words": words, "minutes_saved": round(max(0, words / 40 - secs / 60)),  # vs typing at 40 wpm
+                "sessions": len(items), "today_count": sum(i.get("ts", "").startswith(today) for i in items),
+                "active_days": len(dates), "last_used": items[-1].get("ts") if items else None,
                 "wpm": round(words / (secs / 60)) if secs else 0, "apps": apps.most_common(5),
                 "known": len([t for t in self._memory().terms() if t[1] in ("you", "learned", "history", "project")])}
 
@@ -199,8 +268,12 @@ def main():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Flow.Dictation")
     if not paths.FROZEN:
         icons.ensure_app_ico(paths.ICON)
-    win = webview.create_window("Dictation settings", str(paths.APP / "ui.html"), js_api=Api(), width=1000, height=700,
-                                min_size=(720, 520), background_color="#FFFFFF")
+    api = Api()
+    win = webview.create_window("Flow", str(paths.APP / "ui.html"), js_api=api, width=1040, height=740,
+                                min_size=(720, 520), background_color="#FFFFFF", frameless=True,
+                                easy_drag=False)
+    api._window = win
+    webview.settings["DRAG_REGION_DIRECT_TARGET_ONLY"] = True
     win.events.shown += lambda: style_window(win)
     webview.start()
 

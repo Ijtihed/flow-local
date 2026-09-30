@@ -52,8 +52,8 @@ def app_icon(size):
     return img.resize((size, size), Image.LANCZOS)
 
 
-def ensure_app_ico(path: Path):
-    if path.exists():
+def ensure_app_ico(path: Path, force=False):
+    if path.exists() and not force:
         return path
     path.parent.mkdir(parents=True, exist_ok=True)
     sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256]

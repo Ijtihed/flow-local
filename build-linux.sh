@@ -22,7 +22,7 @@ cat > "$APPDIR/flow.desktop" <<'DESKTOP'
 [Desktop Entry]
 Type=Application
 Name=Flow
-Comment=Private voice dictation
+Comment=Voice dictation
 Exec=Flow
 Icon=flow
 Terminal=false
@@ -42,5 +42,5 @@ if [[ ! -x "$TOOL" ]]; then
     chmod +x "$TOOL"
 fi
 ARCH=x86_64 "$TOOL" --appimage-extract-and-run "$APPDIR" "$PWD/installer/Flow-x86_64.AppImage"
-sha256sum installer/Flow-x86_64.AppImage > installer/Flow-x86_64.AppImage.sha256
+(cd installer && sha256sum Flow-x86_64.AppImage) > installer/Flow-x86_64.AppImage.sha256
 echo 'Built installer/Flow-x86_64.AppImage'

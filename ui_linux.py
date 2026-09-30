@@ -9,7 +9,8 @@ import paths
 
 METHODS = {"stamp", "history", "delete", "clear", "copy", "edit", "settings", "save_settings",
            "insights", "memory", "add_term", "remove_term", "remove_fix", "scan_vaults",
-           "enable_voice_notes", "system", "setup_run", "setup_status", "finish_onboarding"}
+           "enable_voice_notes", "system", "setup_run", "setup_status", "finish_onboarding",
+           "configure_speech", "forget_api_key"}
 
 
 def make_server(api):

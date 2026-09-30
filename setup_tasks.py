@@ -1,4 +1,4 @@
-"""First-run setup for a new machine. The only time Flow touches the network; after this it runs offline.
+"""Download optional on-device models and GPU libraries. API speech is configured separately.
 
   speech model   Whisper from Hugging Face into %APPDATA%\\Flow\\models (reuses an existing HF cache)
   GPU pack       NVIDIA cuBLAS/cuDNN libraries from PyPI wheels, only when an NVIDIA GPU is present
@@ -35,7 +35,7 @@ from system import nvidia_gpu, cuda_dirs, cuda_ready
 def find_model(name):
     """Local path of a Whisper model if it's already on this PC."""
     local = paths.MODELS / name
-    if (local / "model.bin").exists():
+    if all((local / filename).is_file() for filename in ("model.bin", "config.json", "tokenizer.json")):
         return str(local)
     # an existing Hugging Face cache (e.g. from another Whisper app): look for the files directly, since
     # newer huggingface_hub rejects snapshots missing README/.gitattributes even though the model is complete
@@ -43,7 +43,7 @@ def find_model(name):
         from huggingface_hub.constants import HF_HUB_CACHE
         repo_dir = Path(HF_HUB_CACHE) / ("models--" + MODEL_REPOS[name].replace("/", "--")) / "snapshots"
         for snap in sorted(repo_dir.glob("*"), key=lambda p: p.stat().st_mtime, reverse=True):
-            if (snap / "model.bin").exists() and (snap / "config.json").exists():
+            if all((snap / filename).is_file() for filename in ("model.bin", "config.json", "tokenizer.json")):
                 return str(snap)
     except Exception:
         pass
@@ -73,7 +73,10 @@ def system_info():
     gpu = nvidia_gpu()
     s = paths.load_settings()
     model = s.get("model") or recommended_model(gpu)
-    return {"gpu": gpu, "cuda": cuda_ready() if gpu else None, "model": model, "model_gb": MODEL_SIZE_GB.get(model),
+    from system import IS_WIN
+    return {"platform": "windows" if IS_WIN else "linux", "recommended_model": recommended_model(gpu),
+            "models": [{"id": k, "gb": v, "ready": bool(find_model(k))} for k, v in MODEL_SIZE_GB.items()],
+            "gpu": gpu, "cuda": cuda_ready() if gpu else None, "model": model, "model_gb": MODEL_SIZE_GB.get(model),
             "model_ready": bool(find_model(model)), "ollama": ollama_status(),
             "vaults": [str(p) for p in vault.vault_paths()], "name": s.get("name") or guess_name()}
 
@@ -86,12 +89,15 @@ def _set(**kw):
 
 
 def run(task, *args):
-    if state["task"]:
-        return False
-    fn = {"model": _download_model, "cuda": _download_cuda, "llm": _pull_llm}[task]
+    fn = {"model": _download_model, "cuda": _download_cuda, "llm": _pull_llm}.get(task)
+    if not fn or (task == "model" and (not args or args[0] not in MODEL_REPOS)):
+        raise ValueError("Choose a supported setup task and model.")
+    with _lock:
+        if state["task"]:
+            return False
+        state.update(task=task, error=None, done=0, total=0, label="Starting…")
 
     def go():
-        _set(task=task, error=None, done=0, total=0)
         try:
             fn(*args)
             with _lock:
@@ -105,29 +111,32 @@ def run(task, *args):
 
 
 def _download_model(name):
-    from huggingface_hub import HfApi, hf_hub_download
+    import requests
+    from huggingface_hub import hf_hub_url
     repo = MODEL_REPOS[name]
-    files = [f for f in HfApi().list_repo_tree(repo) if getattr(f, "size", None)
-             and f.path in ("config.json", "model.bin", "tokenizer.json", "vocabulary.txt", "vocabulary.json", "preprocessor_config.json")]
-    total = sum(f.size for f in files)
+    # The tray sets HF_HUB_OFFLINE for inference. Setup must still download the user's chosen model.
+    meta = requests.get(f"https://huggingface.co/api/models/{repo}/tree/main", timeout=30)
+    meta.raise_for_status()
+    allowed = {"config.json", "model.bin", "tokenizer.json", "vocabulary.txt", "vocabulary.json", "preprocessor_config.json"}
+    files = [f for f in meta.json() if f.get("size") and f.get("path") in allowed and f.get("type") == "file"]
+    if not {"model.bin", "config.json", "tokenizer.json"}.issubset({f["path"] for f in files}):
+        raise RuntimeError("The speech model repository is missing required files. Please try again later.")
+    total = sum(f["size"] for f in files)
     _set(label=f"Downloading the {name} speech model", total=total)
     out = paths.MODELS / name
     out.mkdir(parents=True, exist_ok=True)
     base = 0
     for f in files:
         # stream so the UI gets real progress
-        import requests
-        from huggingface_hub import hf_hub_url
-        with requests.get(hf_hub_url(repo, f.path), stream=True, timeout=30) as r:
+        with requests.get(hf_hub_url(repo, f["path"]), stream=True, timeout=30) as r:
             r.raise_for_status()
-            tmp = out / (f.path + ".part")
+            tmp = out / (f["path"] + ".part")
             with open(tmp, "wb") as fh:
                 for chunk in r.iter_content(1 << 20):
                     fh.write(chunk)
                     base += len(chunk)
                     _set(done=base)
-            tmp.replace(out / f.path)
-    paths.save_settings({"model": name})
+            tmp.replace(out / f["path"])
 
 
 def _download_cuda():

@@ -1,4 +1,4 @@
-"""Speech -> your text, 100% on this PC.
+"""Speech -> your text, using on-device Whisper or an explicitly enabled transcription API.
 
   1. Language: Whisper's language ID, restricted to the languages you speak. When two are close
      (mixed-language speech), both are decoded and the more confident transcript wins.
@@ -6,7 +6,7 @@
   3. Pass 2: personal terms that sound like something in pass 1 are added to the prime and the audio is
      decoded again. The acoustic model still decides, so a term only appears if you actually said it.
   4. Memory repairs: learned fixes, sound-alike repairs of rare words, canonical casing.
-  5. Cleanup: local qwen3:8b (Ollama) removes fillers and applies self-corrections. Its output is only
+  5. Cleanup: local qwen3:1.7b (Ollama) removes fillers and applies self-corrections. Its output is only
      accepted if it adds no word you didn't say; otherwise light rule-based cleanup is used.
   6. Style for chats vs everywhere else, then snippets.
 """
@@ -211,9 +211,18 @@ class Engine:
         from faster_whisper import WhisperModel
         cuda = ctranslate2.get_cuda_device_count() > 0 and setup_tasks.cuda_ready()
         self.device = "cuda" if cuda else "cpu"
-        self.whisper = WhisperModel(model_path, device=self.device,
-                                    compute_type="int8_float16" if cuda else "int8", local_files_only=True)
-        list(self.whisper.transcribe(np.zeros(RATE, dtype=np.float32), language="en")[0])  # warm-up
+        self.whisper = None
+        try:
+            self.whisper = WhisperModel(model_path, device=self.device,
+                                        compute_type="int8_float16" if cuda else "int8", local_files_only=True)
+            list(self.whisper.transcribe(np.zeros(RATE, dtype=np.float32), language="en")[0])
+        except Exception:
+            if not cuda:
+                raise
+            self.whisper = None
+            self.device = "cpu"
+            self.whisper = WhisperModel(model_path, device="cpu", compute_type="int8", local_files_only=True)
+            list(self.whisper.transcribe(np.zeros(RATE, dtype=np.float32), language="en")[0])
 
     def warm_llm(self):
         """Load qwen3 into memory once so the first real cleanup is fast."""
@@ -318,6 +327,11 @@ class Engine:
         return out or None
 
     def transcribe(self, audio, settings):
+        if settings.get("speech_provider", "local") == "api":
+            from speech_api import transcribe
+            text, lang = transcribe(audio, settings)
+            self.last_path = "api·" + settings["api_model"]
+            return self.memory.correct(text) if text else text, lang
         langs = [l for l in settings.get("languages") or [] if l]
         mem = self.memory
         core = mem.core_terms()

@@ -1,8 +1,6 @@
 # Flow
 
-Free, local voice dictation for Windows and Linux. Hold a key, talk, let go, and your words are typed wherever your cursor is. Speech and personal vocabulary stay on your computer.
-
-![Flow](docs/home.png)
+Free voice dictation for Windows and Linux. Hold a key, talk, let go, and your words are typed wherever your cursor is. Choose on-device speech or an optional transcription API. Your vocabulary and history stay on your device.
 
 ## Download
 
@@ -12,7 +10,17 @@ Free, local voice dictation for Windows and Linux. Hold a key, talk, let go, and
 
 The repository and downloads are private until the owner chooses to publish them. Sign into GitHub with an account that has repository access to download.
 
-The first time it opens, Flow downloads the speech model once (about 3 GB on GPU, 0.5 GB for the smaller CPU model). GPU acceleration and optional cleanup models are separate downloads. After setup, dictation works offline.
+Setup detects your OS and offers a speech engine and model choice. Local options are Whisper small (0.5 GB), large-v3-turbo (1.6 GB) and large-v3 (3.1 GB). Flow recommends a model for your hardware; GPU acceleration and cleanup are optional downloads. On-device dictation works offline after setup. A short animated tour explains the shortcut once, and can be replayed in Settings.
+
+### Optional API speech
+
+Choose API in setup or Settings, select a transcription model, enter your API base URL and key, and accept the data notice. The default is OpenAI; services implementing the same `POST /audio/transcriptions` multipart contract are also supported. Choose Custom model for another provider's model ID. HTTPS is required except for a self-hosted service on localhost.
+
+Each dictation uploads the microphone recording to the selected provider. An internet connection is required, fees may apply, and the provider's data policy applies. Flow sends the recording, model and a single-language hint when applicable; it does not send history, dictionary, app titles or notes. Read [OpenAI's data controls](https://developers.openai.com/api/docs/guides/your-data), or your own provider's policy. Nothing is uploaded until you explicitly enable API speech and dictate.
+
+Keys are kept outside settings and history: Windows uses account-bound DPAPI encryption; Linux uses a user-readable-only file (mode 0600). Forget API key removes it and switches back to local speech. Switching models takes effect after the current dictation; no restart is needed. Re-selecting an engine also retries a failed model load.
+
+API request formatting, consent, key storage, timeouts and quota errors are tested against an isolated local server. No real paid API account was used for release validation.
 
 ### Linux setup
 
@@ -44,14 +52,16 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 
 ## What it does
 
-- **Runs on your PC.** Whisper large-v3 for speech, a small local model for cleanup. No account, no cloud.
+- **Your engine choice.** Run Whisper locally, or use an API with your own key. Cleanup stays local.
 - **Learns you.** Names, jargon and project names get spelled right. It reads your Obsidian vault (optional) and learns from every word you fix.
 - **Matches the app.** Casual in Discord, formal in email, your own style everywhere. Texting shortcuts like idk and tbh in chats if you want them.
 - **Cleans up.** Removes ums and handles "at 2, actually 3". It can only delete words, never invent them.
 - **Many languages.** Switch between languages mid conversation.
 - **Voice notes.** Optionally saves every dictation to a daily note in Obsidian.
+- **Spoken shortcuts.** Save “my email” → your full email address, then say that phrase while dictating.
+- **A home screen that changes.** Greetings follow your local time, recent use and selected mood. Mood is your choice; Flow does not infer emotions from your recordings.
 
-An NVIDIA GPU makes it fast (about 1 to 2 seconds per dictation). It also runs on the CPU with a smaller model. Smart cleanup needs [Ollama](https://ollama.com) installed; Flow downloads the model it uses for you.
+An NVIDIA GPU accelerates local speech. Flow also runs on the CPU and falls back to it if GPU inference cannot start. Smart cleanup needs [Ollama](https://ollama.com) installed; Flow downloads the model it uses for you.
 
 ## Build from source
 
@@ -78,6 +88,10 @@ bash build-linux.sh
 `build-linux.sh` builds `installer/Flow-x86_64.AppImage` with PyInstaller and the official [AppImage packaging tools](https://docs.appimage.org/packaging-guide/manual.html). Speech models and NVIDIA libraries are downloaded during setup. For source installs, GPU libraries can also be installed with `pip install -r requirements-gpu.txt`.
 
 Run `python -m unittest discover -s tests -v` for platform and settings-server checks. Run `Flow.exe --self-test` or `./Flow-x86_64.AppImage --self-test` on a desktop to verify the bundled speech runtime, audio devices, assets and overlay without modifying your personal data.
+
+`--self-test-headless` checks the packaged runtime and assets without opening a window or inspecting audio/GPU devices. Add `--test-report report.json` for a saved result (useful with the Windows GUI executable).
+
+For isolated interface checks, run `npm install` and `npm test` inside `tests/`. This uses a simulated DOM and clock, without controlling a browser or accessing the desktop. It covers setup on both OSes, the first-use tutorial, model/API selection, greetings, spoken shortcuts and the website's automatic app cycle.
 
 ## Use the engine in your own code
 

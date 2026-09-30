@@ -108,6 +108,8 @@ class Flow:
         self.mtimes = {}
         self.engine = Engine(self.memory)
         self.ready = False
+        self.loading = True
+        self.speech_signature = None
         self.recording = False
         self.mode = None              # "ptt" | "hands"
         self.pressed_at = 0
@@ -159,6 +161,8 @@ class Flow:
         self.tray.update_menu()
 
     def reload(self):
+        if self.recording or self.busy:
+            return  # Finish this dictation with the engine and settings it started with.
         try:
             m = SETTINGS.stat().st_mtime
         except OSError:
@@ -168,6 +172,15 @@ class Flow:
             self.settings = load_settings()
             self.keys.set_shortcut(self.settings["shortcut"])
             self.memory.set_languages(self.settings["languages"])
+        if not self.loading and not self.busy and not self.recording and self.speech_signature != self._speech_signature(self.settings):
+            self.loading = True
+            self.ready = False
+            self.set_tray("loading")
+            threading.Thread(target=self.load_model, daemon=True).start()
+
+    @staticmethod
+    def _speech_signature(s):
+        return tuple(s.get(k) for k in ("speech_provider", "model", "api_base", "api_model", "api_consent", "speech_revision"))
 
     def migrate(self):
         """Carry v2 dictionary words into memory; seed from Obsidian on first run."""
@@ -182,21 +195,36 @@ class Flow:
     def load_model(self):
         # a fresh install has no speech model yet: the window walks through setup, we wait for it
         asked = False
-        while True:
+        from speech_api import configured
+        while self.loading:
             s = load_settings()
-            model = setup_tasks.find_model(s.get("model") or "large-v3")
-            if s.get("onboarded") and model:
+            model = setup_tasks.find_model(s.get("model") or "large-v3") if s.get("speech_provider", "local") == "local" else None
+            if s.get("onboarded") and (model or configured(s)):
                 break
             if not asked:
                 self.events.put("setup")
                 asked = True
             time.sleep(1.5)
+        if not self.loading:
+            return
         self.settings = s
         self.memory.set_languages(s["languages"])
-        self.engine.load(model)
-        gpu = setup_tasks.nvidia_gpu()
+        try:
+            if s.get("speech_provider") == "api":
+                self.engine.whisper = None
+                self.engine.device = "api"
+            else:
+                self.engine.load(model)
+        except Exception:
+            self.loading = False
+            self.speech_signature = self._speech_signature(s)
+            self.events.put(("error", "Could not load speech model. Open Settings and choose another model."))
+            return
+        gpu = setup_tasks.nvidia_gpu() if self.engine.device != "api" else None
         (DATA / "status.json").write_text(json.dumps({"device": self.engine.device, "gpu": gpu[0] if gpu else None,
-                                                      "model": s.get("model") or "large-v3"}), "utf-8")
+                                                      "model": s.get("api_model") if self.engine.device == "api" else s.get("model") or "large-v3"}), "utf-8")
+        self.speech_signature = self._speech_signature(s)
+        self.loading = False
         self.events.put("ready")
         if self.settings.get("cleanup", True):
             self.engine.warm_llm()
@@ -212,8 +240,17 @@ class Flow:
             self.chunks.append(indata[:, 0].copy())
             self.level = float(np.sqrt(np.mean(indata ** 2)))
 
-        self.stream = sd.InputStream(samplerate=RATE, channels=1, dtype="float32", callback=cb)
-        self.stream.start()
+        try:
+            self.stream = sd.InputStream(samplerate=RATE, channels=1, dtype="float32", callback=cb)
+            self.stream.start()
+        except Exception:
+            if hasattr(self, "stream"):
+                try:
+                    self.stream.close()
+                except Exception:
+                    pass
+            self.flash("Check your microphone")
+            return
         self.recording = True
         self.keys.recording = True
         self.mode = mode
@@ -375,7 +412,8 @@ class Flow:
                 self.flash("Learned " + ", ".join(m for _, m in ev[1][:2]))
             elif ev[0] == "error":
                 self.busy = False
-                self.flash("Something went wrong")
+                self.flash("Check speech settings")
+                (DATA / "speech-error.json").write_text(json.dumps({"message": ev[1], "ts": time.time()}), "utf-8")
                 print("error:", ev[1])
 
         now = time.time()
@@ -399,6 +437,7 @@ class Flow:
         self.root.after(33, self.tick)
 
     def quit(self):
+        self.loading = False
         if self.recording:
             self.stream.stop()
         self.engine.unload_llm()

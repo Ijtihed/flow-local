@@ -19,3 +19,24 @@ Asset: https://openai.com/favicon.svg
 codex.png
 Source page: https://openai.com/codex/
 Asset: Codex app GA logo from the installed official OpenAI desktop package (webview/assets/codex-app-ga-logo-3e5209898ca3.png).
+
+telegram.svg
+Official asset: https://telegram.org/file/464001088/1/bI7AJLo7oX4.287931.zip/374fe3b0a59dc60005
+
+firefox.svg
+Official asset: https://www.firefox.com/media/img/logos/firefox/firefox-logo.svg
+
+vscode.png
+Official asset: https://raw.githubusercontent.com/microsoft/vscode/main/resources/linux/code.png
+
+teams.svg
+Official asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icons/en-us/m365-app-icons-fy26/Teams-Icon-FY26.svg
+
+word.svg
+Official asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icons/en-us/m365-app-icons-fy26/Word-Icon-FY26.svg
+
+powerpoint.svg
+Official asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icons/en-us/m365-app-icons-fy26/PowerPoint-Icon-FY26.svg
+
+obsidian.svg
+Official asset: https://obsidian.md/images/obsidian-logo-gradient.svg

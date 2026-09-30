@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Flow: private voice dictation</title>
-<meta name="description" content="Free, private voice dictation. Hold a key, talk, and it's typed wherever your cursor is. Runs entirely on your PC.">
+<title>Flow: talk, it types</title>
+<meta name="description" content="Hold a key, talk, and it's typed wherever your cursor is. Free voice dictation for Windows and Linux, with on-device or API speech.">
 <link rel="icon" href="favicon.ico">
 <style>
   @font-face { font-family: "Plex Sans"; src: url("assets/PlexSans-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
@@ -17,7 +17,7 @@
   body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.55 "Plex Sans", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.005em;
     display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
   a { color: inherit; }
-  .wrap { width: 100%; max-width: 1360px; margin: 0 auto; padding: 0 clamp(24px, 4vw, 56px); }
+  .wrap { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 clamp(24px, 3.5vw, 48px); }
 
   nav { display: flex; align-items: center; justify-content: space-between; height: 76px; }
   .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -53,18 +53,18 @@
   .tag { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); margin: 0 0 12px 2px; height: 20px; }
   .tag b { font-weight: 600; color: var(--ink); }
   .tag i { font-style: normal; color: var(--ink-3); }
-  .win { position: relative; height: clamp(300px, 52vh, 480px); border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 30px 60px -30px rgba(0,0,0,.18); overflow: hidden; display: flex; flex-direction: column; }
+  .win { position: relative; height: clamp(320px, 57vh, 520px); border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 30px 60px -30px rgba(0,0,0,.18); overflow: hidden; display: flex; flex-direction: column; }
   .bar { height: 44px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--side); font-size: 13px; font-weight: 550; }
   .bar .dot { width: 22px; height: 22px; border-radius: 6px; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600; }
   .bar small { font-weight: 400; color: var(--ink-3); margin-left: auto; }
   .body { flex: 1; min-height: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-  .msg { max-width: 72%; padding: 9px 13px; border-radius: 14px; font-size: 14px; line-height: 1.45; background: var(--fill); align-self: flex-start; }
+  .msg { max-width: 85%; padding: 12px 16px; border-radius: 14px; font-size: 16px; line-height: 1.45; background: var(--fill); align-self: flex-start; }
   .msg.me { background: var(--ink); color: #fff; align-self: flex-end; animation: pop .35s cubic-bezier(.2,.8,.2,1); }
   @keyframes pop { from { transform: translateY(6px) scale(.97); opacity: 0; } }
-  .input { margin-top: auto; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; font-size: 14px; line-height: 1.45; }
+  .input { margin-top: auto; min-height: 52px; border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px; font-size: 16px; line-height: 1.45; }
   .field { display: flex; gap: 10px; font-size: 13.5px; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .field span { color: var(--ink-3); width: 56px; }
-  .mail { flex: 1; padding-top: 14px; font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; }
+  .mail { flex: 1; padding-top: 14px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
   .typed { white-space: pre-wrap; }
   .caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -3px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
@@ -83,10 +83,13 @@
   .app-logo { width: 23px; height: 23px; object-fit: contain; }
   .pill-mark { width: 22px; height: 22px; margin-right: 9px; }
   .demo-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 18px; }
+  .scene-tabs { display: flex; flex-wrap: wrap; gap: 2px; }
   .demo-controls button { font: inherit; font-size: 12px; border: 0; background: none; color: var(--ink-2); cursor: pointer; padding: 6px 9px; border-radius: 6px; }
   .demo-controls button[aria-pressed="true"] { background: var(--fill); color: var(--ink); }
   .demo-controls button:hover { background: var(--side); }
   .paused *, .paused *::after { animation-play-state: paused !important; }
+  .win { animation: switch-app .5s cubic-bezier(.2,.8,.2,1); }
+  @keyframes switch-app { from { opacity: .15; transform: translateY(10px) scale(.97); } }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
   @media (max-width: 900px), (max-height: 600px) {
@@ -104,15 +107,15 @@
   <main class="wrap">
     <section>
       <h1>Talk.<br><em>It types.</em></h1>
-      <p class="lede">Free, private voice dictation. Hold a key, talk, and it's typed wherever your cursor is. It learns your words and runs entirely on your PC.</p>
+      <p class="lede">Hold a key, say what's on your mind, and it's typed wherever your cursor is. It learns your words and your style. Choose on-device or API speech.</p>
       <div class="cta">
-        <a class="btn" href="https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe">
+        <a class="btn" id="downloadWindows" href="https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe">
           <svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Download for Windows</a>
-        <a class="btn secondary" href="https://github.com/Ijtihed/flow-local/releases/latest/download/Flow-x86_64.AppImage">Download for Linux</a>
+        <a class="btn secondary" id="downloadLinux" href="https://github.com/Ijtihed/flow-local/releases/latest/download/Flow-x86_64.AppImage">Download for Linux</a>
       </div>
-      <p class="fine">Free and open source. Linux x86_64.</p>
+      <p class="fine" id="osHint">Free and open source. Windows and Linux x86_64.</p>
       <div class="steps" id="steps">
-        <div data-s="hold"><b>Hold</b><span><kbd>Ctrl</kbd> <kbd>Win</kbd></span></div>
+        <div data-s="hold"><b>Hold</b><span><kbd>Ctrl</kbd> <kbd id="osKey">Win</kbd></span></div>
         <div data-s="talk"><b>Talk</b><span>in any app</span></div>
         <div data-s="go"><b>Let go</b><span>it's typed</span></div>
       </div>
@@ -122,7 +125,7 @@
       <div class="tag" id="tag"></div>
       <div class="win" id="win"></div>
       <div class="demo-controls"><div class="scene-tabs" role="group" aria-label="Demo app">
-        <button data-scene="0">Discord</button><button data-scene="1">Outlook</button><button data-scene="2">Codex</button><button data-scene="3">Slack</button>
+        <button data-scene="0">Telegram</button><button data-scene="1">Firefox</button><button data-scene="2">Discord</button><button data-scene="3">Outlook</button><button data-scene="4">Codex</button><button data-scene="5">Slack</button>
       </div><button id="pause" aria-label="Pause demo">Pause</button></div>
     </div>
   </main>
@@ -130,6 +133,10 @@
 <script>
 (() => {
   const scenes = [
+    { app: "Telegram", style: "very casual", kind: "chat", title: "Maya",
+      before: ["coffee after class?"], text: "yeah i'm down, meet you outside in ten" },
+    { app: "Firefox", style: "casual", kind: "browser", title: "Project notes",
+      before: ["A thought for later"], text: "Check the results from today's experiment and send the notes before Friday" },
     { app: "Discord", style: "very casual", kind: "chat", title: "maya", avatar: "M",
       before: ["are you coming to the thing tonight??"], text: "deadass idk if i can make it, lowkey cooked from the lab" },
     { app: "Outlook", style: "formal", kind: "mail", to: "Maya Chen", subject: "Draft feedback",
@@ -139,10 +146,19 @@
     { app: "Slack", style: "casual", kind: "chat", title: "#launch", avatar: "#",
       before: ["can someone review the pricing page before 5?"], text: "On it, I'll push the fix after standup" },
   ];
-  const logos = {Discord: "discord.svg", Outlook: "outlook.svg", Codex: "codex.png", Slack: "slack.png"};
+  const logos = {Telegram: "telegram.svg", Firefox: "firefox.svg", Discord: "discord.svg", Outlook: "outlook.svg", Codex: "codex.png", Slack: "slack.png"};
   const $ = (s) => document.querySelector(s);
+  const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
+  const linux = /Linux/i.test(platform) && !/Android/i.test(navigator.userAgent);
+  const windows = /Win/i.test(platform);
+  if (linux) {
+    $("#downloadLinux").classList.remove("secondary"); $("#downloadWindows").classList.add("secondary");
+    $(".cta").prepend($("#downloadLinux")); $("#osKey").textContent = "Super";
+    $("#osHint").textContent = "Linux detected · x86_64 AppImage. Free and open source.";
+  } else if (windows) $("#osHint").textContent = "Windows detected · Windows 10 or 11. Free and open source.";
+  else $("#osHint").textContent = "Available for Windows and Linux x86_64. Download on a supported computer.";
   const win = $("#win"), tag = $("#tag"), steps = $("#steps");
-  let paused = matchMedia("(prefers-reduced-motion: reduce)").matches, generation = 0, selected = 0;
+  let paused = false, generation = 0, selected = 0;
   const wait = async (ms, gen) => {
     while (ms > 0) {
       if (gen !== generation) throw "restart";
@@ -182,8 +198,9 @@
   }
 
   function render(sc) {
-    tag.innerHTML = `<b>${sc.style}</b><i>·</i>dictation demo`;
-    if (sc.kind === "chat") {
+    tag.innerHTML = `<b>${sc.style}</b>`;
+    win.style.animation = "none"; void win.offsetWidth; win.style.animation = "";
+    if (sc.kind === "chat" || sc.kind === "browser") {
       win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${logos[sc.app]}" alt=""><span>${sc.app}</span><small>${sc.title}</small></div>
         <div class="body">${sc.before.map((m) => `<div class="msg">${esc(m)}</div>`).join("")}
         <div class="input"><span class="typed"></span><span class="caret"></span></div></div>`;

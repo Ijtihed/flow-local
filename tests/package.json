@@ -1,0 +1,6 @@
+{
+  "name": "flow-interface-checks",
+  "private": true,
+  "scripts": {"test": "node interface.cjs"},
+  "devDependencies": {"jsdom": "24.1.0", "@sinonjs/fake-timers": "8.1.0"}
+}

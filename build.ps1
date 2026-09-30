@@ -3,7 +3,7 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 .\.venv\Scripts\pip install pyinstaller | Out-Null
-.\.venv\Scripts\python -c "import icons; from pathlib import Path; icons.ensure_app_ico(Path('assets/flow.ico')); icons.app_icon(256).save('assets/logo.png')"
+.\.venv\Scripts\python -c "import icons; from pathlib import Path; icons.ensure_app_ico(Path('assets/flow.ico'), force=True); icons.app_icon(256).save('assets/logo.png')"
 .\.venv\Scripts\pyinstaller flow.spec --noconfirm
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed" }
 $iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
