@@ -180,6 +180,16 @@ class Updates(unittest.TestCase):
         self.assertNotIn('taskkill', text)
         self.assertNotIn('Roaming', text)
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows PowerShell helper')
+    def test_native_windows_helper_really_executes_its_script(self):
+        marker = self.folder/'ran.txt'
+        script = self.folder/'helper.ps1'
+        script.write_text("Set-Content -LiteralPath '" + str(marker).replace("'", "''") + "' -Value 'completed'", 'utf-8-sig')
+        process = updates.launch_windows(script)
+        self.assertEqual(process.wait(timeout=10), 0)
+        self.assertTrue(marker.exists(), 'A zero exit code must also mean the helper executed')
+        self.assertEqual(marker.read_text().strip(), 'completed')
+
     def test_first_run_name_is_required_and_trimmed(self):
         api = Api()
         for name in ('', '  ', 'a'*81, 'Alex\n', None):

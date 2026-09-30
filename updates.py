@@ -215,8 +215,7 @@ def install(downloaded):
         from system import startup_enabled
         script = downloaded.parent / 'install.ps1'
         script.write_text(windows_script(downloaded, Path(sys.executable).resolve(), startup_enabled(), downloaded.parent.name), 'utf-8-sig')
-        subprocess.Popen(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', str(script)],
-                         creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS)
+        launch_windows(script)
     else:
         target = os.environ.get('APPIMAGE')
         if not target:
@@ -226,6 +225,15 @@ def install(downloaded):
         subprocess.Popen(['/bin/sh', '-c', 'while kill -0 "$1" 2>/dev/null; do sleep 0.2; done; "$2" & "$2" --window',
                           'Flow update', str(os.getpid()), target], start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def launch_windows(script):
+    # DETACHED_PROCESS makes Windows PowerShell exit successfully without
+    # running its script. A hidden process with valid handles runs reliably.
+    return subprocess.Popen(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                             '-WindowStyle', 'Hidden', '-File', str(script)],
+                            creationflags=subprocess.CREATE_NO_WINDOW, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 class Manager:
