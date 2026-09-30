@@ -116,7 +116,7 @@ def clear_practice(ident):
 
 
 def send(action, **args):
-    if action not in {"practice_start", "practice_stop", "practice_cancel", "record_start", "record_stop", "record_cancel"}:
+    if action not in {"practice_start", "practice_stop", "practice_cancel", "record_start", "record_stop", "record_cancel", "quit"}:
         raise ValueError("Unsupported recording control.")
     queue = folder() / "commands"
     ident = f"{time.time_ns():020d}-{uuid.uuid4().hex}"

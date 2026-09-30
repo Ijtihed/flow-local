@@ -546,7 +546,9 @@ class Flow:
 
     def handle_control(self, command):
         action, args = command.get("action"), command.get("args") or {}
-        if action == "practice_start":
+        if action == "quit":
+            self.events.put("quit")
+        elif action == "practice_start":
             ident = control.valid_session(args.get("id"))
             lang = args.get("language")
             if lang not in control.PHRASES or args.get("phrase") != control.PHRASES.get(lang) or not self.ready or self.busy or self.recording:

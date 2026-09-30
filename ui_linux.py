@@ -13,6 +13,7 @@ METHODS = {"stamp", "history", "delete", "clear", "copy", "edit", "settings", "s
     "configure_speech", "forget_api_key", "recording_status", "record_start", "record_stop", "record_cancel",
     "practice_open", "practice_start", "practice_stop", "practice_cancel", "practice_status", "practice_complete"}
 METHODS.update({"diagnostics", "copy_speech_report", "export_speech_report"})
+METHODS.update({"update_status", "check_updates", "install_update", "save_update_access", "forget_update_access", "publish_update"})
 
 
 def make_server(api):
@@ -85,6 +86,7 @@ def make_server(api):
 
 def serve(api):
     server, url = make_server(api)
+    api._server = server
     print("Flow Settings:", url, flush=True)
     webbrowser.open(url)
     try:

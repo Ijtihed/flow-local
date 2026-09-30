@@ -177,9 +177,10 @@
   .app-chrome button:hover { background: var(--fill); }
   .app-chrome button:last-child:hover { background: #c93232; color: white; }
   .native aside { padding-top: 42px; }
-  .mood-line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; margin: 16px 0 24px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
-  .mood-line > span { flex: 1 1 240px; }
-  .mood-line select { flex: none; }
+  .update-access { margin: 12px 0; font-size: 13px; color: var(--ink-2); }
+  .update-access summary { cursor: pointer; }
+  .update-access .adder { margin-top: 12px; }
+  .update-progress { width: 100%; height: 3px; accent-color: var(--ink); margin-top: 10px; }
   .speech-form { border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 16px 0; }
   .speech-form .field { width: 100%; min-width: 0; }
   .speech-form label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 500; }
@@ -341,18 +342,12 @@ function greeting() {
   if (S.mood === "relaxed") options = ["Take your time", time, "Easy does it"];
   if (S.mood === "low-energy") options = ["A little less typing", time, "Take it easy"];
   const index = (greetingVisit + Math.floor(Date.now() / 1800000)) % options.length;
-  const hints = S.mood === "focused" ? ["Room for your next thought.", "Keep your hands on what matters."]
-    : S.mood === "relaxed" ? ["No rush. Just say it.", "Talk it through, at your own pace."]
-    : S.mood === "low-energy" ? ["Let your voice do the typing.", "One less thing to type today."]
-    : [today ? `${today} dictation${today === 1 ? "" : "s"} today. Your next thought is welcome.` : "Your first thought of the day starts here.",
-       period === "late" ? "Keeping you company for the late shift." : "Say what's on your mind."];
-  return {title: options[index], hint: hints[index % hints.length]};
+  return {title: options[index]};
 }
 function updateGreeting() {
   if (view !== "home" || !$("#greeting")) return;
   const g = greeting(), first = (S.name || "").split(" ")[0];
   $("#greeting").innerHTML = `${esc(g.title)}${first ? `, <em>${esc(first)}</em>` : ""}`;
-  $("#greetingHint").textContent = g.hint;
 }
 function renderHome() {
   const q = query.trim().toLowerCase();
@@ -362,7 +357,6 @@ function renderHome() {
   const top = I.apps[0] ? I.apps[0][1] : 1;
   let html = `<h1 id="greeting">${esc(g.title)}${first ? `, <em>${esc(first)}</em>` : ""}</h1>
     <p class="lede">Hold ${kbd(S.shortcut)} and talk. Let go, and it's typed.</p>
-    <div class="mood-line"><span id="greetingHint">${esc(g.hint)}</span><select id="mood" aria-label="Your mood">${[["auto", "Auto"], ["focused", "Focused"], ["relaxed", "Relaxed"], ["low-energy", "Low energy"]].map(([id,label]) => `<option value="${id}" ${S.mood === id ? "selected" : ""}>${label}</option>`).join("")}</select></div>
     <div class="stats">
       <div class="stat"><b data-to="${I.words}">0</b><span>words dictated</span></div>
       <div class="stat"><b data-to="${I.minutes_saved}">0</b><span>minutes saved</span></div>
@@ -394,7 +388,6 @@ function renderHome() {
   if (!renderHome.animated) { document.querySelectorAll(".stat b").forEach(countUp); renderHome.animated = true; }
   else document.querySelectorAll(".stat b").forEach((b) => (b.textContent = (+b.dataset.to).toLocaleString()));
   const qi = $("#q");
-  $("#mood").onchange = async (e) => { S.mood = e.target.value; greetingVisit++; await api().save_settings({mood: S.mood}); updateGreeting(); };
   qi.oninput = () => { query = qi.value; const pos = qi.selectionStart; renderHome(); const n = $("#q"); n.focus(); n.setSelectionRange(pos, pos); };
 }
 
@@ -564,6 +557,10 @@ function renderSettings() {
     ${section("Obsidian")}
     <div class="row col"><div class="l"><b>Voice notes</b><small>Every dictation goes into a daily note in your vault. The folder is kept out of git, so it stays on this PC.</small></div><button class="switch ${vn.enabled ? "on" : ""}" id="s-vn"></button>
       ${vn.enabled && vn.folder ? `<div class="under"><span class="path">${esc(vn.folder)}</span></div>` : ""}</div>
+    ${section("Updates")}
+    <div class="row"><div class="l"><b>Flow ${esc(S.version)}</b><small id="updateMessage" role="status">Check for the latest version.</small><progress class="update-progress" id="updateProgress" max="100" value="0" hidden></progress></div><button class="btn ghost" id="checkUpdates">Check for updates</button></div>
+    <details class="update-access" id="updateAccess"><summary>GitHub access</summary><p>For private releases, connect your own GitHub token with Contents read access to Flow. An existing GitHub CLI sign-in also works.</p><div class="adder"><input class="field" id="updateToken" type="password" autocomplete="off" placeholder="GitHub access token" aria-label="GitHub access token"><button class="btn ghost" id="connectUpdates">Connect</button><button class="link" id="forgetUpdates">Forget token</button></div></details>
+    <div id="publishUpdates" hidden><button class="link" id="publishUpdate">Publish update on GitHub</button><p class="note">Build and publish a new version with the Publish update workflow.</p></div>
     ${section("General")}
     <div class="row"><div class="l"><b>A quick tour</b><small>Say a sentence and watch it become text.</small></div><button class="btn ghost" id="replayTour">Show me</button></div>
     <div class="row"><div class="l"><b>Open at sign-in</b><small>Flow waits in the tray, ready when you are.</small></div><button class="switch ${S.startup ? "on" : ""}" data-toggle="startup"></button></div>
@@ -575,6 +572,7 @@ function renderSettings() {
   $("#saveEngine").onclick = async e => { const b = e.currentTarget; b.disabled = true; b.textContent = "Preparing…"; $("#settingsSpeech").inert = true; if (await applySpeech("settingsSpeech", config)) { S = await api().settings(); render(); toast("Speech engine saved"); } else { $("#settingsSpeech").inert = false; b.disabled = false; b.textContent = "Use this engine"; } };
   if ($("#forgetKey")) $("#forgetKey").onclick = async () => { await api().forget_api_key(); S = await api().settings(); render(); toast("Key removed. Choose a local model to continue."); };
   $("#replayTour").onclick = showTutorial;
+  bindUpdates();
   $("#s-shortcut").onchange = (e) => save({ shortcut: e.target.value });
   document.querySelectorAll("[data-seg]").forEach((g) => g.querySelectorAll("button").forEach((b) => b.onclick = () => {
     g.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); layoutSegs();
@@ -589,6 +587,43 @@ function renderSettings() {
     if (!confirmClear) { confirmClear = true; render(); setTimeout(() => { confirmClear = false; view === "settings" && render(); }, 3000); return; }
     confirmClear = false; await api().clear(); await refresh(true); toast("History cleared");
   };
+}
+
+// ---------------------------------------------------------------- updates
+let updateTimer, updateBusy = false;
+function drawUpdate(state) {
+  if (view !== "settings" || !$("#checkUpdates")) return;
+  const button = $("#checkUpdates"), progress = $("#updateProgress");
+  updateBusy = ["checking", "downloading", "installing"].includes(state.phase);
+  button.disabled = updateBusy;
+  button.dataset.phase = state.phase;
+  button.textContent = state.phase === "available" ? "Update" : state.phase === "checking" ? "Checking…" : state.phase === "downloading" ? "Downloading…" : state.phase === "installing" ? "Restarting…" : "Check for updates";
+  $("#updateMessage").textContent = state.message || (state.phase === "current" ? "You're up to date." : state.phase === "available" ? `Version ${state.latest} is ready.` : state.phase === "checking" ? "Looking for a new version…" : state.phase === "downloading" ? `Downloading update · ${state.progress || 0}%` : state.phase === "installing" ? "Flow will restart after updating. Your data stays here." : "Check for the latest version.");
+  progress.hidden = state.phase !== "downloading"; progress.value = state.progress || 0;
+  $("#publishUpdates").hidden = !state.publisher;
+  if (state.phase === "error") $("#updateAccess").open = true;
+}
+async function pollUpdates() {
+  if (view !== "settings") { clearInterval(updateTimer); return; }
+  try { drawUpdate(await api().update_status()); } catch { $("#updateMessage").textContent = "Could not check update status. Try again."; }
+}
+function bindUpdates() {
+  clearInterval(updateTimer); pollUpdates(); updateTimer = setInterval(pollUpdates, 500);
+  $("#checkUpdates").onclick = async e => {
+    const button = e.currentTarget; button.disabled = true;
+    try {
+      if (button.dataset.phase === "available") await api().install_update();
+      else await api().check_updates();
+      await pollUpdates();
+    } catch (error) { $("#updateMessage").textContent = error.message || String(error); button.disabled = false; }
+  };
+  $("#connectUpdates").onclick = async () => {
+    const input = $("#updateToken");
+    try { await api().save_update_access(input.value); input.value = ""; await pollUpdates(); }
+    catch (error) { input.value = ""; $("#updateMessage").textContent = error.message || String(error); }
+  };
+  $("#forgetUpdates").onclick = async () => { await api().forget_update_access(); $("#updateToken").value = ""; toast("Saved token removed"); };
+  $("#publishUpdate").onclick = async () => { try { await api().publish_update(); } catch (error) { $("#updateMessage").textContent = error.message || String(error); } };
 }
 
 // ---------------------------------------------------------------- onboarding
@@ -612,7 +647,7 @@ function obRender() {
       <div class="ob-foot">${dots}<button class="btn" id="obNext">Get started</button></div>`;
   } else if (ob.step === 1) {
     c.innerHTML = `<h1>About you</h1><p class="lede">So Flow spells your name right from the first word.</p>
-      <div class="ob-body"><div class="label">Your name</div><input class="field" id="obName" value="${esc(ob.name)}" spellcheck="false">
+      <div class="ob-body"><label class="label" for="obName">What should we call you?</label><input class="field" id="obName" value="${esc(ob.name)}" placeholder="Your name" maxlength="80" autocomplete="given-name" required spellcheck="false">
       <div class="label">Languages you speak</div><div class="langs" style="margin:0">${Object.entries(LANGS).slice(0, 12).map(([k, l]) => `<button class="lang ${ob.langs.includes(k) ? "on" : ""}" data-oblang="${k}">${l}</button>`).join("")}</div></div>
       <div class="ob-foot">${dots}<button class="btn" id="obNext">Continue</button></div>`;
   } else if (ob.step === 2) {
@@ -631,13 +666,20 @@ function obRender() {
       <div class="ob-foot">${dots}<button class="btn" id="obNext">Start using Flow</button></div>`;
   }
   $("#obNext").onclick = obNext;
+  if ($("#obName")) {
+    const name = $("#obName"), next = $("#obNext");
+    next.disabled = !name.value.trim();
+    name.oninput = () => { ob.name = name.value.trim(); next.disabled = !ob.name; };
+    name.onkeydown = e => { if (e.key === "Enter" && !next.disabled) obNext(); };
+    name.focus();
+  }
   document.querySelectorAll("[data-oblang]").forEach((b) => b.onclick = () => { const l = b.dataset.oblang; ob.langs = ob.langs.includes(l) ? ob.langs.filter((x) => x !== l) : [...ob.langs, l]; if (!ob.langs.length) ob.langs = [l]; b.classList.toggle("on", ob.langs.includes(l)); });
   if ($("#obScan")) $("#obScan").onclick = (e) => { ob.scan = !ob.scan; e.currentTarget.classList.toggle("on", ob.scan); };
   if ($("#obNotes")) $("#obNotes").onclick = (e) => { ob.notes = !ob.notes; e.currentTarget.classList.toggle("on", ob.notes); };
 }
 async function obNext() {
   const btn = $("#obNext");
-  if (ob.step === 1) ob.name = $("#obName").value.trim();
+  if (ob.step === 1) { ob.name = $("#obName").value.trim(); if (!ob.name) return; }
   if (ob.step === 2) {
     btn.disabled = true; btn.textContent = "Preparing…";
     $("#setupSpeech").inert = true;
@@ -810,7 +852,7 @@ async function init() {
   if (S.native_window) { document.body.classList.add("native"); $("#appChrome").hidden = false; }
   document.querySelectorAll("[data-window]").forEach(b => b.onclick = () => api().window_action(b.dataset.window));
   if (!S.onboarded) {
-    ob.sys = await api().system(); ob.name = ob.sys.name || ""; ob.langs = S.languages && S.languages.length ? S.languages : ["en"];
+    ob.sys = await api().system(); ob.name = S.name || ""; ob.langs = S.languages && S.languages.length ? S.languages : ["en"];
     ob.speech = speechConfig(); ob.speech.model = ob.sys.recommended_model; ob.speech.consent = false;
     $("#ob").hidden = false; obRender();
   }

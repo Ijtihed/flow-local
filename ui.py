@@ -16,6 +16,7 @@ import voicenotes
 import speech_api
 import control
 import health
+import updates
 from memory import Memory
 from paths import HISTORY, MEMORY
 
@@ -100,6 +101,8 @@ class Api:
         return s
 
     def save_settings(self, patch):
+        if "update_key" in patch:
+            raise ValueError("Use GitHub access to save update credentials.")
         if any(k in patch for k in ("tutorial_seen", "tutorial_version")):
             raise ValueError("Complete the spoken practice to finish the tutorial.")
         if any(k in patch for k in ("speech_provider", "model", "api_base", "api_model", "api_consent", "api_key")):
@@ -163,6 +166,41 @@ class Api:
 
     def _set_startup(self, on):
         set_startup(on, paths.launch_command())
+
+    # ---- updates
+    def _updates(self):
+        if not hasattr(self, "_updater"):
+            self._updater = updates.Manager()
+        return self._updater
+
+    def update_status(self):
+        return self._updates().status()
+
+    def check_updates(self):
+        return self._updates().check()
+
+    def install_update(self):
+        def close():
+            control.send("quit")
+            if hasattr(self, "_window"):
+                self._window.destroy()
+            if hasattr(self, "_server"):
+                self._server.shutdown()
+        return self._updates().apply(close)
+
+    def save_update_access(self, token):
+        updates.save_token(token)
+        return self.check_updates()
+
+    def forget_update_access(self):
+        (paths.DATA / "update-key").unlink(missing_ok=True)
+        return True
+
+    def publish_update(self):
+        if not self._updates().status().get("publisher"):
+            raise ValueError("Connect a GitHub account with write access before publishing updates.")
+        import webbrowser
+        return webbrowser.open(updates.PUBLISH)
 
 
     # ---- insights for Home
@@ -336,6 +374,9 @@ class Api:
         return dict(setup_tasks.state)
 
     def finish_onboarding(self, name, languages, scan):
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80 or any(ord(c) < 32 for c in name):
+            raise ValueError("Enter the name you want Flow to use (up to 80 characters).")
+        name = name.strip()
         m = self._memory()
         m.set_languages(languages)
         if name:

@@ -13,13 +13,19 @@ const base = {name:'Alex',onboarded:true,tutorial_seen:false,platform:'windows',
   speech_models:[{id:'large-v3',gb:3.1,ready:true},{id:'small',gb:.5,ready:true},{id:'large-v3-turbo',gb:1.6,ready:true}]};
 let checks=0;
 function apiFixture(platform='windows', fresh=false) {
-  const S={...clone(base),platform,onboarded:!fresh};
+  const S={...clone(base),platform,onboarded:!fresh,name:fresh?'':base.name};
   const calls=[];
   const practice={phase:'ready',ready:true,matched:false,level:0,elapsed:0};
   const recording={ready:true,recording:false,busy:false,phase:'idle',elapsed:0};
   const diagnostic={status:'passed',version:'1.5.0'};
+  const updates={phase:'idle',current:base.version,publisher:false};
   const history=fresh ? [] : Array.from({length:12},(_,i)=>({ts:new Date(2026,8,30,9,i).toISOString(),text:'Please send the project notes.',app:i%2?'firefox':'telegram',words:5,seconds:2,lang:'en'}));
-  return {S,calls,practice,recording,diagnostic,api:{
+  return {S,calls,practice,recording,diagnostic,updates,api:{
+    update_status:async()=>clone(updates),
+    check_updates:async()=>{Object.assign(updates,{phase:'checking',message:''});return true},
+    install_update:async()=>{calls.push({action:'update'});Object.assign(updates,{phase:'downloading',progress:0});return true},
+    save_update_access:async token=>{calls.push({action:'access',token});Object.assign(updates,{phase:'checking',message:''});return true},
+    forget_update_access:async()=>true,publish_update:async()=>{calls.push({action:'publish'});return true},
     diagnostics:async()=>clone(diagnostic),copy_speech_report:async()=>true,export_speech_report:async()=>"/fixture/Reports/check.json",
     settings:async()=>clone(S),memory:async()=>({terms:[],fixes:[],scanned:null}),stamp:async()=>1,history:async()=>clone(history),
     insights:async()=>({words:60,minutes_saved:1,wpm:150,apps:[['telegram',6],['firefox',6]],known:0,sessions:history.length,last_used:history[0]?.ts}),
@@ -86,8 +92,9 @@ async function ui(platform) {
   assert(ctx.d.querySelector('#healthNotice').hidden,'Successful checks remain silent');
   assert.equal(ctx.d.querySelector('.app-name img').getAttribute('src'),'assets/logos/telegram.svg');
   assert.equal(ctx.d.querySelectorAll('.app-name img')[1].getAttribute('src'),'assets/logos/firefox.svg');
-  change(ctx,'mood','relaxed');await ctx.clock.tickAsync(20);
-  assert.equal(f.S.mood,'relaxed');
+  assert(!ctx.d.querySelector('#mood'));
+  assert(!ctx.d.querySelector('#greetingHint'));
+  assert(!ctx.d.body.textContent.includes("Say what's on your mind."));
   const before=ctx.d.querySelector('#greeting').textContent;
   ctx.clock.setSystemTime(new Date(2026,8,30,20,35));await ctx.clock.tickAsync(60000);
   assert.notEqual(ctx.d.querySelector('#greeting').textContent,before);
@@ -113,19 +120,41 @@ async function ui(platform) {
   assert(!ctx.d.querySelector('#reportDialog').hidden);
   assert.equal(JSON.parse(ctx.d.querySelector('#reportText').value).status,'failed');
   button(ctx,'Close').click();assert(ctx.d.querySelector('#reportDialog').hidden);
+  button(ctx,'Check for updates').click();await ctx.clock.tickAsync(20);
+  assert(button(ctx,'Checking…').disabled);
+  Object.assign(f.updates,{phase:'available',latest:'1.6.0',publisher:true});await ctx.clock.tickAsync(500);
+  assert(ctx.d.querySelector('#updateMessage').textContent.includes('1.6.0'));
+  assert(!ctx.d.querySelector('#publishUpdates').hidden);
+  button(ctx,'Publish update on GitHub').click();await ctx.clock.tickAsync(20);
+  assert.equal(f.calls.at(-1).action,'publish');
+  button(ctx,'Update').click();await ctx.clock.tickAsync(20);assert.equal(f.calls.at(-1).action,'update');
+  assert(button(ctx,'Downloading…').disabled);
+  Object.assign(f.updates,{phase:'downloading',progress:63});await ctx.clock.tickAsync(500);
+  assert.equal(ctx.d.querySelector('#updateProgress').value,63);
+  Object.assign(f.updates,{phase:'error',message:'GitHub access required.'});await ctx.clock.tickAsync(500);
+  assert(ctx.d.querySelector('#updateAccess').open);assert(!button(ctx,'Check for updates').disabled);
+  input(ctx,'updateToken','private-test-token');button(ctx,'Connect').click();await ctx.clock.tickAsync(20);
+  assert.equal(ctx.d.querySelector('#updateToken').value,'');
+  assert(!ctx.d.body.textContent.includes('private-test-token'));
+  Object.assign(f.updates,{phase:'current'});await ctx.clock.tickAsync(500);
+  assert.equal(ctx.d.querySelector('#updateMessage').textContent,"You're up to date.");
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));
-  ctx.close();checks+=18;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection, diagnostic warning PASS');
+  ctx.close();checks+=25;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection, diagnostic warning, updates PASS');
 }
 async function setup(platform) {
   const f=apiFixture(platform,true),ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(50);
-  button(ctx,'Get started').click();button(ctx,'Continue').click();
+  button(ctx,'Get started').click();
+  assert.equal(ctx.d.querySelector('#obName').value,'','Do not guess the name from the OS account');
+  assert(button(ctx,'Continue').disabled);
+  input(ctx,'obName','   ');assert(button(ctx,'Continue').disabled);
+  input(ctx,'obName','Alex');assert(!button(ctx,'Continue').disabled);button(ctx,'Continue').click();
   assert.equal(ctx.d.querySelector('#setupSpeech-model').value,'small');
   ctx.d.querySelector('#setupSpeech [data-provider="api"]').click();button(ctx,'Continue').click();await ctx.clock.tickAsync(20);
   assert.equal(f.calls.length,0);assert(!ctx.d.querySelector('#setupSpeech-error').hidden);
   ctx.d.querySelector('#setupSpeech [data-provider="local"]').click();change(ctx,'setupSpeech-model','large-v3-turbo');
   button(ctx,'Continue').click();await ctx.clock.tickAsync(20);button(ctx,'Start using Flow').click();await ctx.clock.tickAsync(20);
-  assert(f.S.onboarded);assert.equal(f.calls[0].model,'large-v3-turbo');assert(!ctx.d.querySelector('#tutorial').hidden);
-  assert.equal(ctx.errors.length,0);ctx.close();checks+=5;console.log(platform+' first-run setup: model choice and consent PASS');
+  assert(f.S.onboarded);assert.equal(f.S.name,'Alex');assert.equal(f.calls[0].model,'large-v3-turbo');assert(!ctx.d.querySelector('#tutorial').hidden);
+  assert.equal(ctx.errors.length,0);ctx.close();checks+=7;console.log(platform+' first-run setup: required name, model choice and consent PASS');
 }
 async function website(platform,ua,reducedMotion=false) {
   const ctx=dom(read('site/index.html'),{platform,ua,reducedMotion});

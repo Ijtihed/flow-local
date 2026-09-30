@@ -55,7 +55,7 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 
 - **Your engine choice.** Run Whisper locally, or use an API with your own key. Cleanup stays local.
 - **Learns you.** Names, jargon and project names get spelled right. It reads your Obsidian vault (optional) and learns from every word you fix.
-- **65 familiar app logos.** Writing and notes, email, chats, AI tools, code editors and browsers share one bundled app catalog. Desktop process names and branded browser-tab titles identify the app for history and writing style. The website automatically cycles through all 65 previews; use the app picker to jump directly to one. These are illustrative previews, not endorsements or provider integrations. Dictation works in other apps too, wherever the OS can paste text.
+- **65 familiar app logos.** Writing and notes, email, chats, AI tools, code editors and browsers share one bundled app catalog. Desktop process names and branded browser-tab titles identify the app for history and writing style. The website automatically cycles through Linear, Gmail and ChatGPT. These are illustrative previews, not endorsements or provider integrations. Dictation works in other apps too, wherever the OS can paste text.
 - **Matches the app.** Casual in Discord, formal in email, your own style everywhere. Texting shortcuts like idk and tbh in chats if you want them.
 - **Cleans up.** Removes ums and handles "at 2, actually 3". It can only delete words, never invent them.
 - **Many languages.** Switch between languages mid conversation.
@@ -64,6 +64,16 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 - **A home screen that changes.** Greetings follow your local time, recent use and selected mood. Mood is your choice; Flow does not infer emotions from your recordings.
 
 An NVIDIA GPU accelerates local speech. Flow also runs on the CPU and falls back to it if GPU inference cannot start. Smart cleanup needs [Ollama](https://ollama.com) installed; Flow downloads the model it uses for you.
+
+## App updates
+
+In Settings → Updates, click **Check for updates**, then **Update** when a new version is ready. Flow downloads the Windows installer or Linux AppImage from GitHub, verifies its SHA-256 digest and restarts. Settings, names, history, dictionaries, speech keys and downloaded models stay in the data folder. Updates wait until dictation has finished. Linux keeps the previous AppImage beside the new one; its location must be writable.
+
+The repository is currently private. Use your own GitHub token with **Contents: read** access under **GitHub access**, or an existing GitHub CLI sign-in. Tokens are protected by Windows DPAPI or a mode-0600 file on Linux, kept separately from speech keys and sent only to GitHub's API. Public releases work without a token if the owner later makes the repository public.
+
+Repository owners with write access also see **Publish update on GitHub** after checking updates. It opens the **Publish update** workflow. To publish a new version, run `python tools/release_version.py 1.5.6` with the desired unused version, commit and push the changes, then run the workflow from Actions. Pushing a matching version tag also starts it. Windows/Linux tests and speech regression must pass before packages are built and published. The workflow creates a draft, uploads both packages and checksums, then publishes it as the latest release. Existing versions are never overwritten.
+
+First-run setup asks **What should we call you?** and requires a name before continuing. It does not infer your preferred name from your OS account. The name stays on your device and helps the greeting and dictionary spell it correctly.
 
 ## Build from source
 
@@ -95,7 +105,7 @@ Run `python -m unittest discover -s tests -v` for platform and settings-server c
 
 For isolated interface checks, run `npm install` and `npm test` inside `tests/`. This uses a simulated DOM and clock, without controlling a browser or accessing the desktop. It covers setup on both OSes, the first-use tutorial, model/API selection, greetings, spoken shortcuts and the website's automatic Linear → Gmail → ChatGPT cycle. The app still recognizes all 65 supported products.
 
-Each time a local speech engine starts, Flow transcribes bundled synthetic test audio, including GitHub, business and download vocabulary. Missing key words, excessive word errors or inference failures show a warning. Review, copy or save the diagnostic report from the warning or Settings → Speech check. The report contains bundled test transcripts and runtime metadata; it excludes your microphone recordings, history and API key. Nothing is uploaded automatically. Add unfamiliar names to Dictionary and edit incorrect dictations to teach their spelling; a passing smoke check cannot guarantee every sentence or accent.
+Each time a local speech engine starts, Flow transcribes bundled synthetic test audio, including GitHub, business and download vocabulary. Missing key words, excessive word errors or inference failures show a warning. Review, copy or save the diagnostic report from the warning. The report contains bundled test transcripts and runtime metadata; it excludes your microphone recordings, history and API key. Nothing is uploaded automatically. Add unfamiliar names to Dictionary and edit incorrect dictations to teach their spelling; a passing smoke check cannot guarantee every sentence or accent.
 
 GitHub Actions runs Windows/Linux unit and interface checks plus actual CPU Whisper-small regression tests against the bundled corpus. Run `python tools/check_speech.py --model small --download --report speech-regression.json` to reproduce the speech job. The downloaded model is cached; no personal microphone input is used. Automatic startup checks do not make paid API requests. API users verify the provider with the interactive spoken practice; actual API transcription failures also produce a diagnostic warning.
 
