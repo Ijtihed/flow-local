@@ -84,7 +84,7 @@
   .win { animation: switch-app .5s cubic-bezier(.2,.8,.2,1); }
   @keyframes switch-app { from { opacity: .15; transform: translateY(10px) scale(.97); } }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
-  @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  @media (prefers-reduced-motion: reduce) { *, *::after { animation: none !important; transition: none !important; } }
   @media (max-width: 900px), (max-height: 600px) {
     body { overflow: auto; display: block; }
     main { grid-template-columns: 1fr; padding-top: 24px; padding-bottom: 48px; }
