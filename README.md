@@ -46,7 +46,7 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 ## Use it
 
 - Hold `Ctrl` + `Win`, talk, let go. The text is pasted where you're typing.
-- Double tap `Ctrl` + `Win` (or tap `Space` while holding) for hands free. Press again to finish.
+- Tap `Space` while holding for hands free. Press the shortcut again to finish.
 - `Esc` cancels.
 - Click the tray icon to start or stop hands-free dictation. Use its Open Flow menu item for history, dictionary and settings.
 - The floating pill shows Recording, live microphone levels and elapsed time. Thinking and Polishing animate while Flow processes your words; after 12 seconds it says Still working. The Home screen's Record button saves a thought to Recent, where you can copy or edit it.

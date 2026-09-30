@@ -542,7 +542,7 @@ function renderSettings() {
     <div id="engineForm"></div><button class="btn" id="saveEngine">Use this engine</button>${S.api_key_saved ? `<button class="link" id="forgetKey" style="margin-left:14px">Forget API key</button>` : ""}
     ${section("Dictation")}
     ${S.platform === "linux" && S.session === "wayland" ? `<p class="note">Wayland shortcuts need readable keyboard devices. Automatic pasting needs uinput or a supported wtype compositor; otherwise press Ctrl+V yourself. See the Linux setup in the README.</p>` : ""}
-    <div class="row"><div class="l"><b>Shortcut</b><small>Hold to talk, let go to paste. Double-tap, or tap Space while holding, for hands-free. Esc cancels.</small></div><select id="s-shortcut">${opt}</select></div>
+    <div class="row"><div class="l"><b>Shortcut</b><small>Hold to talk, let go to paste. Tap Space while holding for hands-free. Esc cancels.</small></div><select id="s-shortcut">${opt}</select></div>
     <div class="row col"><div class="l"><b>Languages you speak</b><small>Flow listens for these and follows you when you switch mid-conversation.</small></div>
       <div class="under"><div class="langs">${Object.entries(LANGS).map(([k, l]) => `<button class="lang ${S.languages.includes(k) ? "on" : ""}" data-lang="${k}">${l}</button>`).join("")}</div></div></div>
     ${section("Style", "Flow checks which app you're in")}

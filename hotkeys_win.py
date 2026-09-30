@@ -1,7 +1,7 @@
 """Low-level keyboard hook for push-to-talk, the way Wispr does it on Windows.
 
 Hold the shortcut to talk, release to paste. While holding, Space locks hands-free.
-Double-tap the shortcut for hands-free too. Esc cancels. The hook swallows the keys it
+Esc cancels. The hook swallows the keys it
 uses (Space, Esc, Caps Lock, F8) so they never reach the app you're typing in.
 """
 import ctypes
@@ -57,6 +57,9 @@ class Hotkeys:
         threading.Thread(target=self._run, daemon=True).start()
 
     def set_shortcut(self, shortcut):
+        if self.active:
+            self.emit("up")
+        self.held.clear()
         self.groups = SHORTCUTS.get(shortcut, SHORTCUTS["ctrl+win"])
         self.active = False
 

@@ -27,6 +27,9 @@ class Hotkeys:
         threading.Thread(target=self._run, daemon=True).start()
 
     def set_shortcut(self, shortcut):
+        if self.active:
+            self.emit("up")
+        self.held.clear()
         self.groups = SHORTCUTS.get(shortcut, SHORTCUTS["ctrl+win"])
         self.active = False
 
@@ -90,7 +93,14 @@ class Hotkeys:
                         if ev.type == e.EV_KEY and ev.value in (0, 1):   # 2 = auto-repeat
                             self.handle(names.get(ev.code, f"k{ev.code}"), ev.value == 1)
                 except OSError:
-                    fds.pop(fd, None)
+                    device = fds.pop(fd, None)
+                    # A disconnected keyboard cannot deliver its key-up.
+                    self.set_shortcut(next(name for name, groups in SHORTCUTS.items() if groups == self.groups))
+                    if device is not None:
+                        try:
+                            device.close()
+                        except OSError:
+                            pass
             if not fds:
                 return True
 

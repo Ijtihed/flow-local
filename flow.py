@@ -1,7 +1,7 @@
 """Flow: local dictation for Windows and Linux.
 
-Hold Ctrl+Win and talk; release and the text is pasted where your cursor is. Double-tap (or press Space while
-holding) for hands-free, press again to finish. Esc cancels. The tray icon toggles hands-free on click.
+Hold Ctrl+Win and talk; release and the text is pasted where your cursor is. Press Space while
+holding for hands-free, press again to finish. Esc cancels. The tray icon toggles hands-free on click.
 """
 import ctypes
 import json
@@ -33,9 +33,6 @@ from memory import Memory
 from paths import DATA, HISTORY, MEMORY, SETTINGS, load_settings
 from system import IS_WIN, dpi_aware, single_instance
 from pill import Pill
-
-TAP = 0.3          # a press shorter than this is a tap, not push-to-talk
-DOUBLE_TAP = 0.45  # second press within this after a tap -> hands-free
 
 user32 = ctypes.windll.user32 if IS_WIN else None
 dpi_aware()
@@ -115,8 +112,6 @@ class Flow:
         self.speech_signature = None
         self.recording = False
         self.mode = None              # "ptt" | "hands"
-        self.pressed_at = 0
-        self.tap_pending = 0          # time a quick tap ended, waiting to see if it's a double-tap
         self.busy = False
         self.chunks = []
         self.level = 0.0
@@ -254,15 +249,22 @@ class Flow:
         self.visual_level = 0
         self.levels.clear()
         self.target_app = foreground_app()
+        # Each stream owns its gate and buffer. A late callback from an old
+        # stream must not append audio to the next recording.
+        accepting = self.capture_gate = threading.Event()
+        accepting.set()
+        chunks = self.chunks
 
         def cb(indata, frames, t, status):
-            self.chunks.append(indata[:, 0].copy())
-            self.level = float(np.sqrt(np.mean(indata ** 2)))
+            if accepting.is_set():
+                chunks.append(indata[:, 0].copy())
+                self.level = float(np.sqrt(np.mean(indata ** 2)))
 
         try:
             self.stream = sd.InputStream(samplerate=RATE, channels=1, dtype="float32", callback=cb)
             self.stream.start()
         except Exception:
+            accepting.clear()
             if hasattr(self, "stream"):
                 try:
                     self.stream.close()
@@ -278,11 +280,21 @@ class Flow:
         self.set_tray("recording")
 
     def _close_stream(self):
-        self.stream.stop()
-        self.stream.close()
+        gate = getattr(self, "capture_gate", None)
+        if gate is not None:
+            gate.clear()
         self.recording = False
         self.keys.recording = False
-        self.tap_pending = 0
+        self.level = self.visual_level = 0
+        try:
+            self.stream.stop()
+        except Exception as error:
+            print("microphone stop:", type(error).__name__)
+        finally:
+            try:
+                self.stream.close()
+            except Exception as error:
+                print("microphone close:", type(error).__name__)
         self.set_tray("idle")
 
     def cancel(self):
@@ -375,24 +387,16 @@ class Flow:
             if ev == "cancel":
                 self.cancel()
             return
-        now = time.time()
         if not self.ready or self.busy:
             return
         if ev == "down":
             if self.recording and self.mode == "hands":
                 self.finish()
-            elif self.recording and self.tap_pending:       # second tap -> hands-free
-                self.tap_pending = 0
-                self.mode = "hands"
             elif not self.recording:
-                self.pressed_at = now
                 self.start("ptt")
         elif ev == "up":
             if self.recording and self.mode == "ptt":
-                if now - self.pressed_at < TAP:
-                    self.tap_pending = now                  # maybe a double-tap; decided in tick()
-                else:
-                    self.finish()
+                self.finish()
         elif ev == "lock":
             if self.recording:
                 self.mode = "hands"
@@ -510,8 +514,6 @@ class Flow:
                 self.finish()
         elif self.recording and self.mode == "compose" and not control.lease_alive(self.compose_session):
             self.cancel()
-        if self.tap_pending and now - self.tap_pending > DOUBLE_TAP:
-            self.cancel()                                   # a lone quick tap: nothing to dictate
         if int(self.t * 30) % 30 == 0:
             self.reload()
         if self.hide_at and now > self.hide_at:
