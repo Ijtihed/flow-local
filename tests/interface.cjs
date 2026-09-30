@@ -35,6 +35,7 @@ function apiFixture(platform='windows', fresh=false) {
     practice_start:async()=>Object.assign(practice,{phase:'recording',level:.7,elapsed:2,text:undefined}),
     practice_stop:async()=>Object.assign(practice,{phase:'thinking',level:0,elapsed:1}),
     practice_cancel:async()=>Object.assign(practice,{phase:'retry',matched:false,message:'Recording cancelled.'}),
+    practice_close:async()=>true,practice_focus:async()=>true,
     practice_complete:async()=>{if(!practice.matched)throw new Error('Say the phrase first');Object.assign(S,{tutorial_seen:true,tutorial_version:2});return true},
     recording_status:async()=>clone(recording),
     record_start:async()=>Object.assign(recording,{recording:true,phase:'listening',elapsed:2}),
@@ -73,6 +74,8 @@ async function ui(platform) {
   assert.equal(ctx.d.querySelector('#platformLabel').textContent,'v1.5.1');
   assert(!ctx.d.querySelector('#skipTour'));
   assert.equal(ctx.d.querySelector('#practicePhrase').textContent,'I can speak instead of typing.');
+  assert(ctx.d.querySelector('#tourHint').textContent.includes(platform==='linux'?'Super':'Win'));
+  assert(ctx.d.querySelector('#tourHint').textContent.includes('let go'));
   await ctx.clock.tickAsync(4400);
   assert(!f.S.tutorial_seen);
   ctx.d.dispatchEvent(new ctx.w.KeyboardEvent('keydown',{key:'Escape'}));await ctx.clock.tickAsync(20);

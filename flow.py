@@ -391,8 +391,10 @@ class Flow:
 
     def on_key(self, ev):
         if self.practice or (self.recording and self.mode == "compose"):
-            if ev == "cancel":
+            if ev == "cancel" or (ev == 'interrupt' and self.mode == 'practice-ptt'):
                 self.cancel()
+            elif ev == 'up' and self.recording and self.mode == 'practice-ptt':
+                self.finish()
             return
         if not self.ready or self.busy:
             return
@@ -400,7 +402,15 @@ class Flow:
             if self.recording and self.mode == "hands":
                 self.finish()
             elif not self.recording:
-                self.start("ptt")
+                practice = control.focused_practice()
+                if practice:
+                    if control.result(practice['id']).get('matched'):
+                        return
+                    self.handle_control({'action': 'practice_start', 'args': practice})
+                    if self.recording:
+                        self.mode = 'practice-ptt'
+                else:
+                    self.start("ptt")
         elif ev == "up":
             if self.recording and self.mode == "ptt":
                 self.finish()
@@ -604,7 +614,9 @@ class Flow:
                 elif self.recording:
                     self.finish()
             elif action == "practice_cancel" and not self.practice:
-                control.clear_practice(control.valid_session(args.get("id")))
+                # Keep an open tutorial armed when cancelling an already
+                # finished attempt; its shortcut should still start a retry.
+                control.result_path(control.valid_session(args.get("id"))).unlink(missing_ok=True)
         elif action == "record_start":
             if self.ready and not self.busy and not self.recording and not self.practice:
                 self.compose_session = control.valid_session(args.get("id"))

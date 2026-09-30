@@ -53,6 +53,19 @@ def foreground_app():
         return "", ""     # Wayland does not expose the focused app to other programs
 
 
+def foreground_pid():
+    """The owner of the focused Windows window, without reading its contents."""
+    if not IS_WIN:
+        return None
+    import ctypes.wintypes as wt
+    user32 = ctypes.windll.user32
+    user32.GetForegroundWindow.restype = wt.HWND
+    user32.GetWindowThreadProcessId.argtypes = [wt.HWND, ctypes.POINTER(wt.DWORD)]
+    pid = wt.DWORD()
+    user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), ctypes.byref(pid))
+    return pid.value
+
+
 def _foreground_win():
     import ctypes.wintypes as wt
     user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32

@@ -51,7 +51,7 @@ def run_window():
             def _ensure_tray(self):
                 pass  # This check never starts a recorder, engine or downloader.
 
-            def practice_status(self):
+            def practice_status(self, focused=None):
                 return {'ready': True, 'recording': False, 'busy': False, 'phase': 'ready'}
 
             def diagnostics(self):

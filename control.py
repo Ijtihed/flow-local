@@ -115,6 +115,39 @@ def clear_practice(ident):
     (folder() / ("lease-" + valid_session(ident) + ".json")).unlink(missing_ok=True)
 
 
+def arm_practice(context, focused=True):
+    ident = valid_session(context.get('id'))
+    lang = context.get('language')
+    if lang not in PHRASES or context.get('phrase') != PHRASES[lang]:
+        raise ValueError('Invalid practice phrase.')
+    atomic_json(folder() / ('practice-window-' + ident + '.json'),
+                {**context, 'pid': os.getpid(), 'focused': bool(focused)})
+
+
+def close_practice(ident):
+    clear_practice(ident)
+    (folder() / ('practice-window-' + valid_session(ident) + '.json')).unlink(missing_ok=True)
+
+
+def focused_practice():
+    """Only a live, focused tutorial may capture the global dictation shortcut."""
+    import system
+    pid = system.foreground_pid() if system.IS_WIN else None
+    for file in folder().glob('practice-window-*.json'):
+        context = read_json(file)
+        try:
+            ident = valid_session(context.get('id'))
+        except ValueError:
+            continue
+        lang = context.get('language')
+        if not lease_alive(ident) or lang not in PHRASES or context.get('phrase') != PHRASES[lang]:
+            continue
+        focused = pid and context.get('pid') == pid if system.IS_WIN else context.get('focused') is True
+        if focused:
+            return {k: context[k] for k in ('id', 'language', 'phrase')}
+    return None
+
+
 def send(action, **args):
     if action not in {"practice_start", "practice_stop", "practice_cancel", "record_start", "record_stop", "record_cancel", "quit", "update_check", "update_install"}:
         raise ValueError("Unsupported recording control.")

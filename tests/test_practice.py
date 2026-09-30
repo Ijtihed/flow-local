@@ -1,5 +1,6 @@
 """Real capture callback wiring, practice verification, leases and UI completion guards."""
 import json
+import os
 import queue
 import tempfile
 import time
@@ -38,6 +39,143 @@ class Practice(unittest.TestCase):
         f.levels = []; f.level = 0; f.tap_pending = 0; f.reload = MagicMock(); f.set_tray = MagicMock()
         f.paste = MagicMock(); f.save = MagicMock()
         return f
+
+    def open_practice(self):
+        api = Api()
+        with patch.object(api, '_ensure_tray'):
+            practice = api.practice_open()
+        return api, practice
+
+    @staticmethod
+    def input_stream(**kwargs):
+        stream = MagicMock()
+        stream.start.side_effect = lambda: kwargs['callback'](np.ones((16000, 1), np.float32) * .05, 16000, None, None)
+        return stream
+
+    def test_shortcut_records_practice_and_release_closes_capture_and_accepts_it(self):
+        f = self.fixture()
+        api, practice = self.open_practice()
+        f.engine.transcribe.return_value = (practice['phrase'], practice['language'])
+        with patch('system.foreground_pid', return_value=os.getpid()), \
+                patch('sounddevice.InputStream', side_effect=self.input_stream), \
+                patch('flow.foreground_app', return_value=('flow', '')), \
+                patch('flow.threading.Thread') as thread:
+            thread.return_value.start.side_effect = lambda: thread.call_args.kwargs['target'](*thread.call_args.kwargs['args'])
+            f.on_key('down')
+            self.assertTrue(f.recording)
+            self.assertEqual(f.mode, 'practice-ptt')
+            self.assertEqual(f.practice['id'], practice['id'])
+            f.on_key('lock')
+            self.assertEqual(f.mode, 'practice-ptt')
+            f.on_key('up')
+            self.assertFalse(f.recording)
+            self.assertFalse(f.capture_gate.is_set())
+            f.stream.stop.assert_called_once()
+            f.stream.close.assert_called_once()
+            f.tick()
+            self.assertEqual(api.practice_status()['phase'], 'passed')
+            f.on_key('down')  # A passed tutorial cannot become ordinary dictation.
+            self.assertFalse(f.recording)
+        f.engine.cleanup.assert_not_called()
+        f.memory.learn_dictation.assert_not_called()
+        f.paste.assert_not_called()
+        f.save.assert_not_called()
+        api.practice_complete()
+        self.assertFalse(list(control.folder().glob('practice-window-*.json')))
+
+    def test_windows_hook_routes_ctrl_windows_and_either_release_to_practice(self):
+        if os.name != 'nt':
+            self.skipTest('Windows keyboard hook')
+        from hotkeys_win import Hotkeys, SHORTCUTS, VK
+        for released in ('lwin', 'lctrl'):
+            with self.subTest(released=released):
+                f = self.fixture()
+                api, practice = self.open_practice()
+                f.engine.transcribe.return_value = (practice['phrase'], practice['language'])
+                keys = Hotkeys.__new__(Hotkeys)
+                keys.emit = f.events.put
+                keys.groups = SHORTCUTS['ctrl+win']
+                keys.held = set()
+                keys.active = keys.recording = False
+                f.keys = keys
+                with patch('hotkeys_win.user32.GetAsyncKeyState', return_value=0x8000), \
+                        patch('hotkeys_win.tap'), patch('system.foreground_pid', return_value=os.getpid()), \
+                        patch('sounddevice.InputStream', side_effect=self.input_stream), \
+                        patch('flow.foreground_app', return_value=('flow', '')), \
+                        patch('flow.threading.Thread') as thread:
+                    thread.return_value.start.side_effect = lambda: thread.call_args.kwargs['target'](*thread.call_args.kwargs['args'])
+                    keys._handle(VK['lctrl'], True)
+                    keys._handle(VK['lwin'], True)
+                    keys._handle(VK['lwin'], True)  # Holding cannot start a second stream.
+                    f.tick()
+                    self.assertTrue(f.recording)
+                    self.assertEqual(f.mode, 'practice-ptt')
+                    keys._handle(VK[released], False)
+                    f.tick()
+                    self.assertFalse(f.recording)
+                    self.assertEqual(api.practice_status()['phase'], 'passed')
+                    f.save.assert_not_called()
+                    f.paste.assert_not_called()
+                api.practice_complete()
+
+    def test_background_tutorial_does_not_capture_other_apps_shortcut(self):
+        f = self.fixture()
+        api, practice = self.open_practice()
+        api.practice_focus(False)
+        f.start = MagicMock()
+        with patch('system.foreground_pid', return_value=os.getpid() + 1):
+            f.on_key('down')
+        f.start.assert_called_once_with('ptt')
+        self.assertIsNone(f.practice)
+
+    def test_linux_tab_focus_and_windows_process_focus_select_only_the_live_tutorial(self):
+        api, practice = self.open_practice()
+        for native in (False, True):
+            with self.subTest(native=native), patch('system.IS_WIN', native), \
+                    patch('system.foreground_pid', return_value=os.getpid()):
+                api.practice_focus(True)
+                self.assertEqual(control.focused_practice(), {k: practice[k] for k in ('id', 'language', 'phrase')})
+                with patch('system.foreground_pid', return_value=os.getpid() + 1):
+                    api.practice_focus(False)
+                    self.assertIsNone(control.focused_practice())
+        with patch('control.time.time', return_value=time.time() + 7):
+            self.assertIsNone(control.focused_practice())
+
+    def test_closing_tutorial_unregisters_shortcut_and_cancels_capture(self):
+        f = self.fixture()
+        api, practice = self.open_practice()
+        f.practice = practice
+        f.recording = True
+        f.mode = 'practice-ptt'
+        f.stream = MagicMock()
+        f.record_started = time.time()
+        api.practice_close()
+        f.tick()
+        self.assertFalse(f.recording)
+        self.assertIsNone(control.focused_practice())
+
+    def test_shortcut_can_retry_after_cancellation_or_interruption(self):
+        f = self.fixture()
+        api, practice = self.open_practice()
+        with patch('system.foreground_pid', return_value=os.getpid()), \
+                patch('sounddevice.InputStream', side_effect=self.input_stream), \
+                patch('flow.foreground_app', return_value=('flow', '')):
+            for event in ('cancel', 'interrupt'):
+                f.on_key('down')
+                self.assertTrue(f.recording)
+                f.on_key(event)
+                self.assertFalse(f.recording)
+                self.assertEqual(api.practice_status()['phase'], 'retry')
+        f.save.assert_not_called()
+
+    def test_shortcut_release_does_not_stop_a_button_started_practice(self):
+        f = self.fixture()
+        f.practice = {'id': 'a' * 32}
+        f.recording = True
+        f.mode = 'practice'
+        f.finish = MagicMock()
+        f.on_key('up')
+        f.finish.assert_not_called()
 
     def test_matches_requires_all_spoken_words_and_ignores_punctuation(self):
         expected = control.PHRASES["en"]

@@ -714,7 +714,7 @@ async function showTutorial() {
   clearInterval(tourTimer); tourFocus = document.activeElement; tourState = "loading";
   const modal = $("#tutorial"); modal.hidden = false;
   $("#scroll").inert = true; $("aside").inert = true;
-  modal.innerHTML = `<div class="tour-card"><h1 id="tourTitle">Your first dictation</h1><p id="tourHint">Click Record. Say this sentence. Then finish.</p>
+  modal.innerHTML = `<div class="tour-card"><h1 id="tourTitle">Your first dictation</h1><p id="tourHint">Hold ${kbd(S.shortcut)}, say this sentence, then let go. You can also click Record.</p>
     <ol class="practice-steps"><li class="on">1 · Record</li><li>2 · Speak</li><li>3 · Done</li></ol>
     <div class="practice-phrase"><small>Say this out loud</small><blockquote id="practicePhrase">Getting ready…</blockquote></div>
     <div class="practice-meter" id="practiceMeter" data-state="loading"><img src="assets/logo.png" alt=""><b id="practiceState" role="status">Getting the speech engine ready…</b><div class="practice-bars">${Array.from({length:9}, (_,i) => `<i style="--i:${i}"></i>`).join("")}</div><time id="practiceTime"></time></div>
@@ -743,7 +743,7 @@ async function showTutorial() {
     }; draw();
   };
   try {
-    tourData = await api().practice_open();
+    tourData = await api().practice_open(document.hasFocus());
     $("#practicePhrase").textContent = tourData.phrase;
     if (tourData.api) $("#practiceNote").textContent = `Your recording is sent to ${tourData.provider || "your speech provider"}. Its data policy and API fees apply. Practice stops after 15 seconds.`;
     await pollPractice(); tourTimer = setInterval(pollPractice, 200);
@@ -763,8 +763,9 @@ async function pollPractice() {
   if (tourPolling || $("#tutorial").hidden) return;
   tourPolling = true;
   try {
-    const status = await api().practice_status();
+    const status = await api().practice_status(document.hasFocus());
     if ($("#tutorial").hidden) return;
+    if (status.phase === 'recording' && tourState !== 'recording') $("#practiceOutput").textContent = 'Listening for your sentence…';
     tourState = status.phase;
     const recording = status.phase === "recording", thinking = status.phase === "thinking", passed = status.phase === "passed" && status.matched;
     $("#practiceMeter").dataset.state = status.phase;
@@ -790,7 +791,10 @@ async function finishTutorial() {
   S.tutorial_seen = true; S.tutorial_version = 2;
   if (tourFocus && tourFocus.isConnected) tourFocus.focus();
 }
-window.addEventListener("pagehide", () => { if (!$("#tutorial").hidden) api().practice_cancel(); });
+window.addEventListener("pagehide", () => { if (!$("#tutorial").hidden) api().practice_close(); });
+for (const event of ['focus', 'blur']) window.addEventListener(event, () => {
+  if (tourData && !$("#tutorial").hidden) api().practice_focus(document.hasFocus());
+});
 async function save(patch, msg = "Saved") { await api().save_settings(patch); S = await api().settings(); render(); toast(msg); }
 function render() {
   const counts = { home: items.length, dictionary: mine().length, snippets: S.snippets.length };

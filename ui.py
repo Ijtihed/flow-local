@@ -317,14 +317,16 @@ class Api:
         control.send("record_cancel", id=getattr(self, "_compose_id", None))
         return True
 
-    def practice_open(self):
+    def practice_open(self, focused=True):
         self._ensure_tray()
         import uuid
         if getattr(self, "_practice", None):
             control.send("practice_cancel", id=self._practice["id"])
+            control.close_practice(self._practice['id'])
         lang, phrase = control.phrase_for(paths.load_settings())
         self._practice = {"id": uuid.uuid4().hex, "language": lang, "phrase": phrase}
         control.lease(self._practice["id"])
+        control.arm_practice(self._practice, focused)
         s = paths.load_settings()
         return {**self._practice, "api": s.get("speech_provider") == "api",
                 "provider": __import__("urllib.parse", fromlist=["urlsplit"]).urlsplit(s.get("api_base", "")).hostname}
@@ -352,12 +354,28 @@ class Api:
             control.send("practice_cancel", id=self._practice["id"])
         return True
 
-    def practice_status(self):
+    def practice_focus(self, focused):
+        if not isinstance(focused, bool):
+            raise ValueError('Expected a window focus state.')
+        if getattr(self, '_practice', None):
+            control.arm_practice(self._practice, focused)
+        return True
+
+    def practice_close(self):
+        if getattr(self, '_practice', None):
+            control.send('practice_cancel', id=self._practice['id'])
+            control.close_practice(self._practice['id'])
+            self._practice = None
+        return True
+
+    def practice_status(self, focused=None):
         if not getattr(self, "_practice", None):
             raise ValueError("Open the spoken practice first.")
         ident = self._practice["id"]
         if __import__("time").time() - getattr(self, "_lease_time", 0) > 1:
             control.lease(ident)
+            if isinstance(focused, bool):
+                self.practice_focus(focused)
             self._lease_time = __import__("time").time()
         runtime = control.state()
         result = control.result(ident)
@@ -372,7 +390,7 @@ class Api:
         if result.get("matched") is not True or not control.matches(result.get("text", ""), self._practice["phrase"]):
             raise ValueError("Say the practice phrase before continuing.")
         paths.save_settings({"tutorial_seen": True, "tutorial_version": control.TUTORIAL_VERSION})
-        control.clear_practice(self._practice["id"])
+        control.close_practice(self._practice["id"])
         self._practice = None
         return True
 
