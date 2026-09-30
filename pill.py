@@ -17,6 +17,7 @@ class PillBase:
     def __init__(self, root, scale):
         self.s = scale
         self.win = tk.Toplevel(root)
+        self.win.title("Flow recording status")
         self.win.overrideredirect(True)
         self.win.geometry("1x1+0+0")
         self.win.update_idletasks()
@@ -129,6 +130,19 @@ if IS_WIN:
 
 
     user32.GetParent.restype = wt.HWND
+    user32.GetParent.argtypes = [wt.HWND]
+    user32.GetForegroundWindow.restype = wt.HWND
+    user32.MonitorFromWindow.argtypes = [wt.HWND, wt.DWORD]
+    user32.MonitorFromWindow.restype = wt.HANDLE
+    user32.SetWindowPos.argtypes = [wt.HWND, wt.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.UINT]
+    user32.SetWindowPos.restype = wt.BOOL
+    user32.IsWindowVisible.argtypes = [wt.HWND]
+    user32.GetWindowRect.argtypes = [wt.HWND, ctypes.POINTER(wt.RECT)]
+
+    class MONITORINFO(ctypes.Structure):
+        _fields_ = [("cbSize", wt.DWORD), ("rcMonitor", wt.RECT), ("rcWork", wt.RECT), ("dwFlags", wt.DWORD)]
+
+    user32.GetMonitorInfoW.argtypes = [wt.HANDLE, ctypes.POINTER(MONITORINFO)]
     user32.GetDC.restype = wt.HDC
     user32.GetDC.argtypes = [wt.HWND]
     gdi32.CreateCompatibleDC.restype = wt.HDC
@@ -153,16 +167,42 @@ if IS_WIN:
             # layered | click-through | topmost | no taskbar button | never takes focus
             user32.SetWindowLongW(self.hwnd, -20, style | 0x80000 | 0x20 | 0x8 | 0x80 | 0x08000000)
             self.win.withdraw()
+            self.monitor = None
+            self.last_frame = None
+
+        def show(self):
+            if not self.visible:
+                super().show()
+                # Mapping a Tk window can set its uniform alpha again. Present
+                # a fresh frame after mapping, without activating the window.
+                if self.last_frame is not None:
+                    self._blit(self.last_frame)
+                self._raise()
+
+        def _raise(self):
+            # WS_EX_TOPMOST must be applied through SetWindowPos; setting the
+            # extended-style bit alone does not change the actual z-order.
+            if not user32.SetWindowPos(self.hwnd, wt.HWND(-1), 0, 0, 0, 0, 0x13):
+                raise ctypes.WinError()
+
+        def _position(self, w, h):
+            if not self.visible or self.monitor is None:
+                self.monitor = user32.MonitorFromWindow(user32.GetForegroundWindow(), 2)
+            info = MONITORINFO(); info.cbSize = ctypes.sizeof(info)
+            if user32.GetMonitorInfoW(self.monitor, ctypes.byref(info)):
+                area = info.rcWork
+                return area.left + (area.right - area.left - w) // 2, area.bottom - h - int(24 * self.s)
+            return (user32.GetSystemMetrics(0) - w) // 2, user32.GetSystemMetrics(1) - h - int(64 * self.s)
 
         def _blit(self, img):
+            self.last_frame = img
             w, h = img.size
             arr = np.asarray(img, dtype=np.uint16)
             alpha = arr[..., 3:4]
             bgra = np.empty((h, w, 4), np.uint8)
             bgra[..., :3] = (arr[..., [2, 1, 0]] * alpha // 255).astype(np.uint8)
             bgra[..., 3] = arr[..., 3]
-            sw, sh = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
-            x, y = (sw - w) // 2, sh - h - int(64 * self.s)
+            x, y = self._position(w, h)
 
             screen = user32.GetDC(None)
             mem = gdi32.CreateCompatibleDC(screen)
@@ -172,12 +212,23 @@ if IS_WIN:
             ctypes.memmove(bits, bgra.tobytes(), w * h * 4)
             old = gdi32.SelectObject(mem, bmp)
             blend = BLENDFUNCTION(0, 0, 255, 1)
-            user32.UpdateLayeredWindow(self.hwnd, screen, ctypes.byref(wt.POINT(x, y)), ctypes.byref(wt.SIZE(w, h)),
-                                       mem, ctypes.byref(wt.POINT(0, 0)), 0, ctypes.byref(blend), 2)
+            args = (self.hwnd, screen, ctypes.byref(wt.POINT(x, y)), ctypes.byref(wt.SIZE(w, h)),
+                    mem, ctypes.byref(wt.POINT(0, 0)), 0, ctypes.byref(blend), 2)
+            accepted = user32.UpdateLayeredWindow(*args)
+            if not accepted:
+                # Tk uses SetLayeredWindowAttributes. Windows then refuses
+                # per-pixel frames until WS_EX_LAYERED is cleared and restored.
+                style = user32.GetWindowLongW(self.hwnd, -20)
+                user32.SetWindowLongW(self.hwnd, -20, style & ~0x80000)
+                user32.SetWindowLongW(self.hwnd, -20, style | 0x80000)
+                accepted = user32.UpdateLayeredWindow(*args)
+            error = ctypes.windll.kernel32.GetLastError() if not accepted else 0
             gdi32.SelectObject(mem, old)
             gdi32.DeleteObject(bmp)
             gdi32.DeleteDC(mem)
             user32.ReleaseDC(None, screen)
+            if not accepted:
+                raise ctypes.WinError(error)
 
 else:
     from PIL import ImageTk

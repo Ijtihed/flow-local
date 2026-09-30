@@ -73,11 +73,9 @@
     box-shadow: 0 10px 30px rgba(0,0,0,.14); display: flex; align-items: center; gap: 4px; transition: opacity .25s ease; pointer-events: none; }
   .pill-label { font-size: 12px; font-weight: 500; margin: 0 12px 0 2px; }
   .pill.show { opacity: 1; }
-  .pill i { width: 3px; height: var(--h, 16px); border-radius: 3px; background: var(--ink); transform: scaleY(.35); transform-origin: center; }
-  .pill.listen i { animation: talk 1.3s ease-in-out infinite alternate; }
-  .pill.think i { height: 5px; transform: none; animation: think 1.6s ease-in-out infinite; opacity: .35; }
-  @keyframes talk { from { transform: scaleY(.35); } to { transform: scaleY(.9); } }
-  @keyframes think { 50% { opacity: .85; } }
+  .pill i { width: 3px; height: 4px; border-radius: 3px; background: var(--ink); transition: height .12s ease, opacity .2s ease; }
+  .pill.think i { height: 5px; opacity: .35; }
+  .pill.think i:nth-of-type(n+4) { display: none; }
 
   .app-logo { width: 23px; height: 23px; object-fit: contain; }
   .pill-mark { width: 22px; height: 22px; margin-right: 9px; }
@@ -85,6 +83,7 @@
   @keyframes switch-app { from { opacity: .15; transform: translateY(10px) scale(.97); } }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
   @media (prefers-reduced-motion: reduce) { *, *::after { animation: none !important; transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { .pill i { transition: height .25s ease, opacity .25s ease !important; } }
   @media (max-width: 900px), (max-height: 600px) {
     body { overflow: auto; display: block; }
     main { grid-template-columns: 1fr; padding-top: 24px; padding-bottom: 48px; }
@@ -145,6 +144,7 @@
   <footer class="wrap"><span>Made by Ijtihed</span><a href="https://github.com/Ijtihed/flow-local" aria-label="Flow on GitHub"><img src="assets/logos/github.svg" alt="" width="20" height="20"></a></footer>
 
 <script src="assets/apps.js"></script>
+<script src="assets/demo-levels.js"></script>
 <script>
 (() => {
   const scenes = [
@@ -179,6 +179,25 @@
     }
   };
   const step = (s) => steps.querySelectorAll("[data-s]").forEach((d) => d.classList.toggle("on", d.dataset.s === s));
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const voiceLevels = window.FLOW_DEMO_LEVELS || [0, .15, .7, .4, .2, .85, .45, 0];
+  async function meter(p, duration, thinking=false) {
+    const bars = [...p.querySelectorAll("i")], interval = reducedMotion ? 250 : 50;
+    let level = 0;
+    for (let elapsed=0; elapsed<duration; elapsed+=interval) {
+      if (thinking) {
+        bars.slice(0,3).forEach((bar,i) => { bar.style.height="5px"; bar.style.opacity = (.35 + .4*(.5+.5*Math.sin(elapsed/500-i))).toFixed(2); });
+      } else {
+        const target = voiceLevels[Math.min(voiceLevels.length-1, Math.floor(elapsed/duration*voiceLevels.length))];
+        level += (reducedMotion ? .55 : .28) * (target-level);
+        bars.forEach((bar,i) => {
+          const envelope = 1 - Math.abs(i-6)/6*.5;
+          bar.style.height = (4 + 22*level*envelope).toFixed(1)+"px";
+        });
+      }
+      await wait(Math.min(interval,duration-elapsed));
+    }
+  }
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
   function pill() {
@@ -190,9 +209,6 @@
     const label = document.createElement("span"); label.className = "pill-label"; label.textContent = "Recording"; p.appendChild(label);
     for (let i = 0; i < 13; i++) {
       const b = document.createElement("i");
-      const env = 1 - Math.abs(i - 6) / 6 * 0.5;
-      b.style.setProperty("--h", (8 + 16 * env).toFixed(0) + "px");
-      b.style.animationDelay = (-i * .09).toFixed(2) + "s";
       p.appendChild(b);
     }
     return p;
@@ -221,10 +237,10 @@
     step(null); await wait(900);
     steps.classList.add("held"); step("hold");
     p.classList.add("show", "listen"); await wait(500);
-    step("talk"); await wait(1500 + sc.text.length * 12);
+    step("talk"); await meter(p, 1500 + sc.text.length * 12);
     steps.classList.remove("held"); step("go");
     p.querySelector(".pill-label").textContent = "Thinking";
-    p.classList.replace("listen", "think"); await wait(650);
+    p.classList.replace("listen", "think"); await meter(p, 650, true);
     p.classList.remove("show");
     const out = win.querySelector(".typed");
     win.classList.add("is-typing");

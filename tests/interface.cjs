@@ -42,10 +42,11 @@ function apiFixture(platform='windows', fresh=false) {
 }
 function dom(html, extra={}) {
   html=html.replace('<script src="assets/apps.js"></script>',()=>'<script>'+read('assets/apps.js')+'</script>');
+  html=html.replace('<script src="assets/demo-levels.js"></script>',()=>'<script>'+read('site/assets/demo-levels.js')+'</script>');
   const errors=[],vc=new VirtualConsole(); vc.on('jsdomError',e=>errors.push(e));
   let clock;
   const page=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'http://127.0.0.1:9000/',virtualConsole:vc,
-    beforeParse(w){w.matchMedia=()=>({matches:false}); clock=FakeTimers.withGlobal(w).install({now:new Date(2026,8,30,9,35).getTime(),toFake:['Date','setTimeout','clearTimeout','setInterval','clearInterval','performance','requestAnimationFrame','cancelAnimationFrame']});
+    beforeParse(w){w.matchMedia=()=>({matches:!!extra.reducedMotion}); clock=FakeTimers.withGlobal(w).install({now:new Date(2026,8,30,9,35).getTime(),toFake:['Date','setTimeout','clearTimeout','setInterval','clearInterval','performance','requestAnimationFrame','cancelAnimationFrame']});
       if(extra.api) w.pywebview={api:extra.api};
       if(extra.platform) {Object.defineProperty(w.navigator,'platform',{value:extra.platform});Object.defineProperty(w.navigator,'userAgent',{value:extra.ua || extra.platform});}
     }});
@@ -126,8 +127,8 @@ async function setup(platform) {
   assert(f.S.onboarded);assert.equal(f.calls[0].model,'large-v3-turbo');assert(!ctx.d.querySelector('#tutorial').hidden);
   assert.equal(ctx.errors.length,0);ctx.close();checks+=5;console.log(platform+' first-run setup: model choice and consent PASS');
 }
-async function website(platform,ua) {
-  const ctx=dom(read('site/index.html'),{platform,ua});
+async function website(platform,ua,reducedMotion=false) {
+  const ctx=dom(read('site/index.html'),{platform,ua,reducedMotion});
   // Synchronous clock steps + microtask drains avoid the host timer latency
   // of tickAsync for every 50 ms polling timer in a full 65-app cycle.
   const advance=async ms=>{for(let elapsed=0;elapsed<ms;elapsed+=50){ctx.clock.tick(50);await Promise.resolve();await Promise.resolve();}};
@@ -147,11 +148,13 @@ async function website(platform,ua) {
   if(platform==='MacIntel') assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
   const seen=new Set(), order=[];
   let recordingInputHeight,typingInputHeight,sawContinuousTyping=false;
+  const meterHeights=new Set();
   for(let i=0;i<110;i++) {
     await advance(500);
     const app=ctx.d.querySelector('.bar span').textContent;
     seen.add(app); if(order.at(-1)!==app) order.push(app);
     const typed=ctx.d.querySelector('.typed');
+    if(ctx.d.querySelector('.pill.listen')) meterHeights.add(ctx.d.querySelector('.pill i').style.height);
     assert.equal(typed.children.length,0,'Text must be one continuous node');
     if(app==='Linear' && ctx.d.querySelector('.win').classList.contains('is-typing')) {
       sawContinuousTyping=true;typingInputHeight=ctx.w.getComputedStyle(ctx.d.querySelector('.input')).height;
@@ -162,7 +165,8 @@ async function website(platform,ua) {
   assert.deepEqual([...seen].sort(),['ChatGPT','Gmail','Linear']);
   assert.deepEqual(order.slice(0,4),['Linear','Gmail','ChatGPT','Linear']);
   assert(sawContinuousTyping);assert.equal(typingInputHeight,recordingInputHeight);
+  assert(meterHeights.size>4,'Recording meter must respond to the reference voice, including reduced motion');
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));ctx.close();checks+=9;
   console.log(platform+' website: OS routing, Linear-first 3-app cycle, footer, continuous text, no demo controls PASS');
 }
-(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await website('Win32');await website('Linux x86_64');await website('MacIntel');console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});
+(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -2,7 +2,7 @@
 ; Per-user install, no admin prompt. The speech model and GPU libraries download during first-run setup.
 
 #define AppName "Flow"
-#define AppVersion "1.5.1"
+#define AppVersion "1.5.2"
 
 [Setup]
 AppId={{6F1B5A0E-2C4D-4F3B-9E1A-3F10D1C7A7E0}
@@ -38,9 +38,9 @@ Name: "startup"; Description: "Open Flow when I sign in"; GroupDescription: "Sta
 Source: "dist\Flow\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\Flow.exe"
-Name: "{group}\{#AppName} Settings"; Filename: "{app}\Flow.exe"; Parameters: "--window"
-Name: "{userdesktop}\{#AppName}"; Filename: "{app}\Flow.exe"; Tasks: desktopicon
+Name: "{group}\{#AppName}"; Filename: "{app}\Flow.exe"; IconFilename: "{app}\Flow.exe"; IconIndex: 0
+Name: "{group}\{#AppName} Settings"; Filename: "{app}\Flow.exe"; Parameters: "--window"; IconFilename: "{app}\Flow.exe"; IconIndex: 0
+Name: "{userdesktop}\{#AppName}"; Filename: "{app}\Flow.exe"; IconFilename: "{app}\Flow.exe"; IconIndex: 0; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Flow"; ValueData: """{app}\Flow.exe"""; Flags: uninsdeletevalue; Tasks: startup

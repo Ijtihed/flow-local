@@ -20,8 +20,13 @@ def tray(state, size, light_taskbar=False):
     S = size * ss
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    fg = (20, 20, 22, 255) if light_taskbar else (255, 255, 255, 255)
-    color = {"recording": RED, "loading": (*fg[:3], 110)}.get(state, fg)
+    # A white badge keeps the original black waveform legible on both light
+    # and dark taskbars, including taskbars with custom accent colours.
+    pad = ss / 2
+    d.rounded_rectangle((pad, pad, S-pad-1, S-pad-1), S*.23,
+                        fill=(250, 250, 250, 255), outline=(0, 0, 0, 60), width=ss)
+    fg = (20, 20, 22, 255)
+    color = {"recording": RED, "loading": (105, 105, 110, 255)}.get(state, fg)
     bar = max(2, round(size / 8)) * ss
     gap = max(1, round(size / 16)) * ss
     total = 5 * bar + 4 * gap

@@ -33,6 +33,14 @@ def run(headless=False):
             pill.render(state, 1, [0.5] * 20, "Ready", 1)
             pill.show()
             root.update()
+            if system.IS_WIN:
+                import ctypes
+                from pill import user32, wt
+                rect = wt.RECT()
+                assert user32.IsWindowVisible(pill.hwnd), "Recording popup is hidden"
+                assert user32.GetWindowRect(pill.hwnd, ctypes.byref(rect))
+                assert rect.right - rect.left > 180 and rect.bottom - rect.top >= 48, "Recording popup has no visible frame"
+                assert user32.GetWindowLongW(pill.hwnd, -20) & 0x8, "Recording popup is not topmost"
         pill.hide()
         root.destroy()
     assert (paths.APP / "ui.html").is_file()
@@ -58,7 +66,7 @@ def run(headless=False):
                       "gpu": system.nvidia_gpu() if not headless else "not inspected",
                       "cuda_libraries": system.cuda_ready() if not headless else "not inspected",
                       "audio_devices": len(sounddevice.query_devices()) if not headless else "not inspected",
-                      "overlay": "rendered" if not headless else "not opened",
+                      "overlay": "visible, sized and topmost" if not headless and system.IS_WIN else "rendered" if not headless else "not opened",
                       "assets": "present", "speech_runtime": ctranslate2.__version__,
                       "interactive_practice": "bundled", "recording_states": "recording, thinking, polishing",
                       "speech_check": "bundled known-audio corpus"}

@@ -356,6 +356,9 @@ def style_window(window):
     """Light title bar with Flow's own icon instead of Python's."""
     try:
         hwnd = window.native.Handle.ToInt32()
+        from System.Drawing import Icon
+        window.native.Icon = Icon(str(paths.ICON))
+        window.native.ShowIcon = True
         dwm = ctypes.windll.dwmapi
         dwm.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(ctypes.c_int(0)), 4)          # light mode
         dwm.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(ctypes.c_int(0xF5F7F7)), 4)   # caption = sidebar
@@ -366,6 +369,8 @@ def style_window(window):
         for which, metric in ((0, 49), (1, 11)):  # ICON_SMALL/SM_CXSMICON, ICON_BIG/SM_CXICON
             n = user32.GetSystemMetrics(metric)
             h = user32.LoadImageW(None, str(paths.ICON), 1, n, n, 0x10)
+            if not h:
+                raise ctypes.WinError()
             user32.SendMessageW(hwnd, 0x80, which, h)  # WM_SETICON
     except Exception as e:
         print("style_window:", e)
