@@ -177,7 +177,8 @@
   .app-chrome button:hover { background: var(--fill); }
   .app-chrome button:last-child:hover { background: #c93232; color: white; }
   .native aside { padding-top: 42px; }
-  .mood-line { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: -14px 0 24px; color: var(--ink-2); font-size: 13px; }
+  .mood-line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; margin: 16px 0 24px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+  .mood-line > span { flex: 1 1 240px; }
   .mood-line select { flex: none; }
   .speech-form { border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 16px 0; }
   .speech-form .field { width: 100%; min-width: 0; }
@@ -219,7 +220,7 @@
   .tour-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
   .tour-foot .btn { min-width: 150px; }
   .practice-note { font-size: 11px !important; margin: 12px 0 0; line-height: 1.45; }
-  .record-row { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; }
+  .record-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0 0; }
   .record-row span { font-size: 12px; color: var(--ink-2); }
   .record-row button.active { background: #b92436; }
   @keyframes tour-in { from { opacity: 0; transform: translateY(16px) scale(.96); } }
@@ -365,7 +366,7 @@ function renderHome() {
   let html = `<h1 id="greeting">${esc(g.title)}${first ? `, <em>${esc(first)}</em>` : ""}</h1>
     <p class="lede">Hold ${kbd(S.shortcut)} and talk. Let go, and it's typed.</p>
     <div class="record-row"><button class="btn" id="recordButton" disabled>Record</button><span id="recordCaption" role="status">Getting ready…</span></div>
-    <div class="mood-line"><span id="greetingHint">${esc(g.hint)}</span><select id="mood" aria-label="Your mood">${[["auto", "Go with the day"], ["focused", "Focused"], ["relaxed", "Relaxed"], ["low-energy", "Low energy"]].map(([id,label]) => `<option value="${id}" ${S.mood === id ? "selected" : ""}>${label}</option>`).join("")}</select></div>
+    <div class="mood-line"><span id="greetingHint">${esc(g.hint)}</span><select id="mood" aria-label="Your mood">${[["auto", "Auto"], ["focused", "Focused"], ["relaxed", "Relaxed"], ["low-energy", "Low energy"]].map(([id,label]) => `<option value="${id}" ${S.mood === id ? "selected" : ""}>${label}</option>`).join("")}</select></div>
     <div class="stats">
       <div class="stat"><b data-to="${I.words}">0</b><span>words dictated</span></div>
       <div class="stat"><b data-to="${I.minutes_saved}">0</b><span>minutes saved</span></div>
@@ -762,7 +763,7 @@ async function refreshRecording() {
     button.dataset.recording = String(status.recording); button.classList.toggle("active", !!status.recording);
     button.textContent = status.recording ? "Finish" : status.busy ? "Thinking…" : "Record";
     button.disabled = !status.ready || !!status.busy;
-    caption.textContent = status.recording ? `Recording · ${Math.floor(status.elapsed || 0)}s` : status.busy ? `${status.phase === "polishing" ? "Polishing" : "Thinking"} · ${Math.floor(status.elapsed || 0)}s` : "A thought for Recent.";
+    caption.textContent = status.recording ? `Recording · ${Math.floor(status.elapsed || 0)}s` : status.busy ? `${status.phase === "polishing" ? "Polishing" : "Thinking"} · ${Math.floor(status.elapsed || 0)}s` : "Save to Recent";
   } catch (_) {} finally {recordingPolling = false;}
 }
 async function save(patch, msg = "Saved") { await api().save_settings(patch); S = await api().settings(); render(); toast(msg); }
@@ -770,7 +771,7 @@ function render() {
   const counts = { home: items.length, dictionary: mine().length, snippets: S.snippets.length };
   for (const k of ["home", "dictionary", "snippets"]) $("#n-" + k).textContent = counts[k] || "";
   $("#footKeys").innerHTML = kbd(S.shortcut) + `<span style="margin-left:2px">to talk</span>`;
-  $("#platformLabel").textContent = `${S.platform === "linux" ? "Linux" : "Windows"} · ${S.speech_provider === "api" ? "API speech" : "On-device speech"} · ${S.version ? `v${S.version}` : ""}`;
+  $("#platformLabel").textContent = S.version ? `v${S.version}` : "";
   if (document.activeElement && (document.activeElement.isContentEditable || document.activeElement.id === "q")) return;
   ({ home: renderHome, dictionary: renderDictionary, snippets: renderSnippets, settings: renderSettings })[view]();
 }

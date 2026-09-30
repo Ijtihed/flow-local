@@ -6,7 +6,7 @@ const FakeTimers = require('@sinonjs/fake-timers');
 const root = require('node:path').resolve(__dirname, '..');
 const read = p => fs.readFileSync(root + '/' + p, 'utf8');
 const clone = x => JSON.parse(JSON.stringify(x));
-const base = {name:'Alex',onboarded:true,tutorial_seen:false,platform:'windows',native_window:false,
+const base = {name:'Alex',onboarded:true,tutorial_seen:false,platform:'windows',native_window:false,version:'1.5.1',
   shortcut:'ctrl+win',mood:'auto',styles:{personal:'very casual',work:'casual',email:'formal',ai:'very casual',code:'casual',docs:'formal',other:'casual'},
   languages:['en'],snippets:[],voice_notes:{},ollama:{running:false,model:false},speech_provider:'local',model:'small',
   api_model:'gpt-transcribe',api_base:'https://api.openai.com/v1',api_consent:false,api_key_saved:false,
@@ -60,7 +60,7 @@ async function ui(platform) {
   assert.equal(ctx.d.querySelector('#tutorial').hidden,false);
   assert.equal(ctx.d.querySelectorAll('.brand').length,1);
   assert(!ctx.d.body.textContent.includes('Private, on this PC'));
-  assert(ctx.d.querySelector('#platformLabel').textContent.startsWith(platform==='linux'?'Linux':'Windows'));
+  assert.equal(ctx.d.querySelector('#platformLabel').textContent,'v1.5.1');
   assert(!ctx.d.querySelector('#skipTour'));
   assert.equal(ctx.d.querySelector('#practicePhrase').textContent,'I can speak instead of typing.');
   await ctx.clock.tickAsync(4400);
