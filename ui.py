@@ -121,7 +121,7 @@ class Api:
             if paths.load_settings().get("onboarded") and not setup_tasks.find_model(model):
                 raise ValueError("Download this speech model before switching to it.")
             paths.save_settings({"speech_provider": "local", "model": model, "api_consent": False,
-                                 "speech_revision": __import__("time").time_ns()})
+                                 "speech_revision": __import__("uuid").uuid4().hex})
         elif provider == "api":
             if config.get("consent") is not True:
                 raise ValueError("Accept the API data notice before enabling API speech.")
@@ -136,7 +136,7 @@ class Api:
             if key:
                 speech_api.save_key(key)
             paths.save_settings({"speech_provider": "api", "api_base": base, "api_model": model,
-                                 "api_consent": True, "speech_revision": __import__("time").time_ns()})
+                                 "api_consent": True, "speech_revision": __import__("uuid").uuid4().hex})
         else:
             raise ValueError("Choose local or API speech.")
         return True
