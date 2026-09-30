@@ -40,7 +40,7 @@ class EngineSettings(unittest.TestCase):
             memory.db.close()
 
     def test_reselecting_an_engine_changes_reload_signature(self):
-        with tempfile.TemporaryDirectory() as folder, patch.object(paths,"DATA",Path(folder)), patch.object(paths,"SETTINGS",Path(folder)/"settings.json"), patch("setup_tasks.find_model",return_value="isolated-model-path"), patch("time.time_ns",return_value=1):
+        with tempfile.TemporaryDirectory() as folder, patch.object(paths,"DATA",Path(folder)), patch.object(paths,"SETTINGS",Path(folder)/"settings.json"), patch("setup_tasks.find_model",return_value="isolated-model-path"), patch("setup_tasks.available_ram",return_value=8), patch("time.time_ns",return_value=1):
             api=Api();config={"provider":"local","model":"small"}
             api.configure_speech(config);a=Flow._speech_signature(paths.load_settings())
             api.configure_speech(config);b=Flow._speech_signature(paths.load_settings())
