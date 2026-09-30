@@ -10,8 +10,8 @@ class Overlay(unittest.TestCase):
     def renderer(self):
         p = PillBase.__new__(PillBase)
         p.s = 1
-        p.font = p._font(12.5)
-        p.mark = icons.app_icon(66)
+        p.font = p._font(12)
+        p.mark = icons.app_icon(48)
         p.shadows = {}
         p._blit = lambda image: setattr(p, 'frame', image)
         return p
@@ -30,6 +30,15 @@ class Overlay(unittest.TestCase):
         first = p.frame.copy()
         p.render('transcribing', .3, [], '', 1, elapsed=2)
         self.assertIsNotNone(ImageChops.difference(first.convert('RGB'), p.frame.convert('RGB')).getbbox())
+
+    def test_entrance_preserves_crisp_geometry_at_small_size(self):
+        p = self.renderer()
+        p.render('listening', 0, [.6], '', .25)
+        entrance_size = p.frame.size
+        p.render('listening', 0, [.6], '', 1)
+        self.assertEqual(entrance_size, p.frame.size, 'Entrance must not scale text or resize the capsule')
+        self.assertLess(p.frame.width, 260)
+        self.assertLess(p.frame.height, 64)
 
     def test_tray_badge_has_contrast_on_both_taskbar_themes(self):
         for light in (False, True):

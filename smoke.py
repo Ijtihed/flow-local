@@ -39,7 +39,7 @@ def run(headless=False):
                 rect = wt.RECT()
                 assert user32.IsWindowVisible(pill.hwnd), "Recording popup is hidden"
                 assert user32.GetWindowRect(pill.hwnd, ctypes.byref(rect))
-                assert rect.right - rect.left > 180 and rect.bottom - rect.top >= 48, "Recording popup has no visible frame"
+                assert rect.right - rect.left > 140 and rect.bottom - rect.top >= 36, "Recording popup has no visible frame"
                 assert user32.GetWindowLongW(pill.hwnd, -20) & 0x8, "Recording popup is not topmost"
         pill.hide()
         root.destroy()

@@ -22,8 +22,8 @@ class PillBase:
         self.win.geometry("1x1+0+0")
         self.win.update_idletasks()
         self.visible = False
-        self.font = self._font(12.5)
-        self.mark = icons.app_icon(round(22 * scale * self.SS))
+        self.font = self._font(12)
+        self.mark = icons.app_icon(round(16 * scale * self.SS))
         self.shadows = {}
 
     def _font(self, size):
@@ -48,8 +48,8 @@ class PillBase:
         key = (w, h)
         if key not in self.shadows:
             img = Image.new("L", (w + 2 * m, h + 2 * m), 0)
-            ImageDraw.Draw(img).rounded_rectangle((m, m + m * 0.35, m + w, m + h + m * 0.35), r, fill=70)
-            self.shadows[key] = img.filter(ImageFilter.GaussianBlur(m / 2.4))
+            ImageDraw.Draw(img).rounded_rectangle((m, m + m * 0.2, m + w, m + h + m * 0.2), r, fill=50)
+            self.shadows[key] = img.filter(ImageFilter.GaussianBlur(m / 3))
         return self.shadows[key]
 
     def render(self, state, t, levels, message, appear, locked=False, elapsed=0):
@@ -57,57 +57,58 @@ class PillBase:
         text_w = 0
         if state == "message":
             text_w = self.font.getlength(message) / k
-        w_l = 278 if state != "message" else max(180, text_w + 86)
-        h_l = 48
-        # Apple-ish entrance: grow from a narrow capsule
-        e = 1 - (1 - appear) ** 3
-        w_l = h_l + (w_l - h_l) * e
-        W, H, M, R = int(w_l * k), int(h_l * k), int(18 * k), int(h_l * k / 2)
+        w_l = 224 if state != "message" else max(156, text_w + 56)
+        h_l = 36
+        # Keep geometry and text at their final size throughout a quick fade.
+        e = 1 - (1 - max(0, min(1, appear))) ** 3
+        W, H, M, R = int(w_l * k), int(h_l * k), int(10 * k), int(h_l * k / 2)
         img = Image.new("RGBA", (W + 2 * M, H + 2 * M), (0, 0, 0, 0))
         img.putalpha(self._shadow(W, H, M, R))
         d = ImageDraw.Draw(img)
-        d.rounded_rectangle((M, M, M + W, M + H), R, fill=(255, 255, 255, 252), outline=(0, 0, 0, 26),
+        d.rounded_rectangle((M, M, M + W, M + H), R, fill=(255, 255, 255, 255), outline=(0, 0, 0, 40),
                             width=max(1, int(k)))
         cx, cy = M + W / 2, M + H / 2
-        if e > 0.6:
-            a = int(255 * min(1, (e - 0.6) / 0.4))
+        if e > 0:
+            a = 255
             mark = self.mark.copy()
             mark.putalpha(mark.getchannel("A").point(lambda v: round(v * a / 255)))
-            img.alpha_composite(mark, (int(M + 12 * k), int(cy - mark.height / 2)))
-            cx += 14 * k
+            img.alpha_composite(mark, (int(M + 8 * k), int(cy - mark.height / 2)))
+            cx += 10 * k
             if state == "listening":
-                label_x = M + 45 * k
+                label_x = M + 32 * k
                 d.text((label_x, cy), "Recording", font=self.font, fill=(29,29,31,a), anchor="lm")
-                dx = label_x + self.font.getlength("Recording") + 8*k
-                r = 3*k
+                dx = label_x + self.font.getlength("Recording") + 6*k
+                r = 2*k
                 d.ellipse((dx-r,cy-r,dx+r,cy+r),fill=(239,68,68,a))
-                d.text((M+W-14*k,cy), f"{int(elapsed)//60}:{int(elapsed)%60:02d}", font=self.font, fill=(110,110,115,a), anchor="rm")
-                n, gap, bw = 11, 4.8 * k, 2.5 * k
-                x0 = M + 172*k - (n - 1) * gap / 2
+                d.text((M+W-10*k,cy), f"{int(elapsed)//60}:{int(elapsed)%60:02d}", font=self.font, fill=(85,85,90,a), anchor="rm")
+                n, gap, bw = 9, 3.5 * k, 2 * k
+                x0 = M + 144*k - (n - 1) * gap / 2
                 for i in range(n):
                     lv = levels[-1] if levels else 0.0
                     env = 1 - abs(i - (n - 1) / 2) / ((n - 1) / 2) * 0.45
-                    bh = (3 + 19 * min(1.0, lv) * env) * k
-                    x = x0 + i * gap
+                    bh = round((3 + 16 * min(1.0, lv) * env) * self.s) * self.SS
+                    x = round((x0 + i * gap) / self.SS) * self.SS
                     d.rounded_rectangle((x - bw / 2, cy - bh / 2, x + bw / 2, cy + bh / 2), bw / 2,
                                         fill=(22, 22, 24, a))
             elif state in ("transcribing", "polishing", "typing"):
                 label = {"transcribing":"Thinking", "polishing":"Polishing", "typing":"Typing"}[state]
                 if state == "transcribing" and elapsed >= 12:
                     label = "Still working"
-                d.text((M+45*k,cy), label, font=self.font, fill=(29,29,31,a), anchor="lm")
-                d.text((M+W-14*k,cy), f"{int(elapsed)}s",font=self.font,fill=(110,110,115,a),anchor="rm")
-                n, gap, bw = 3, 10 * k, 4 * k
-                x0 = M + 178*k - (n - 1) * gap / 2
+                d.text((M+32*k,cy), label, font=self.font, fill=(29,29,31,a), anchor="lm")
+                d.text((M+W-10*k,cy), f"{int(elapsed)}s",font=self.font,fill=(85,85,90,a),anchor="rm")
+                n, gap, bw = 3, 8 * k, 3 * k
+                x0 = M + 144*k - (n - 1) * gap / 2
                 for i in range(n):
-                    wave = 0.5 + 0.5 * np.sin(t * 7 - i * 0.55)
-                    bh = (3 + 5 * wave) * k
+                    wave = 0.5 + 0.5 * np.sin(t * 6 - i * 0.7)
+                    bh = 3 * k
                     x = x0 + i * gap
                     d.rounded_rectangle((x - bw / 2, cy - bh / 2, x + bw / 2, cy + bh / 2), bw / 2,
                                         fill=(22, 22, 24, int(a * (0.3 + 0.7 * wave))))
             else:
                 d.text((cx, cy), message, font=self.font, fill=(29, 29, 31, a), anchor="mm")
         img = img.resize((img.width // self.SS, img.height // self.SS), Image.LANCZOS)
+        if e < 1:
+            img.putalpha(img.getchannel("A").point(lambda v: round(v * e)))
         self._blit(img)
 
 

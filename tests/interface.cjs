@@ -137,7 +137,7 @@ async function website(platform,ua,reducedMotion=false) {
   assert.equal(ctx.d.querySelector('.bar span').textContent,'Linear');
   assert.equal(ctx.d.querySelector('footer').textContent.trim(),'Made by Ijtihed');
   assert(ctx.d.querySelector('footer a[aria-label="Flow on GitHub"] img'));
-  assert(!ctx.d.querySelector('.caret').getAttribute('style'));
+  assert(!ctx.d.querySelector('.caret'));
   assert(!ctx.d.querySelector('#tag').textContent.includes('dictation demo'));
   assert(!ctx.d.querySelector('#osHint'));
   assert(!ctx.d.body.textContent.includes('Windows 10 or 11'));
@@ -147,7 +147,8 @@ async function website(platform,ua,reducedMotion=false) {
   if(platform==='Win32') assert(ctx.d.querySelector('#download').href.endsWith('FlowSetup.exe'));
   if(platform==='MacIntel') assert(ctx.d.querySelector('#download').href.endsWith('/releases/latest'));
   const seen=new Set(), order=[];
-  let recordingInputHeight,typingInputHeight,sawContinuousTyping=false;
+  let recordingInputHeight,resultInputHeight,firstResultAt;
+  const visibleResults = new Map();
   const meterHeights=new Set();
   for(let i=0;i<110;i++) {
     await advance(500);
@@ -156,15 +157,19 @@ async function website(platform,ua,reducedMotion=false) {
     const typed=ctx.d.querySelector('.typed');
     if(ctx.d.querySelector('.pill.listen')) meterHeights.add(ctx.d.querySelector('.pill i').style.height);
     assert.equal(typed.children.length,0,'Text must be one continuous node');
-    if(app==='Linear' && ctx.d.querySelector('.win').classList.contains('is-typing')) {
-      sawContinuousTyping=true;typingInputHeight=ctx.w.getComputedStyle(ctx.d.querySelector('.input')).height;
-      assert.equal(ctx.w.getComputedStyle(ctx.d.querySelector('.caret')).animationName,'');
+    if(typed.textContent) {
+      if(!visibleResults.has(app)) visibleResults.set(app,new Set());
+      visibleResults.get(app).add(typed.textContent);
+      if(app==='Linear') { firstResultAt ??= (i+1)*500; resultInputHeight=ctx.w.getComputedStyle(ctx.d.querySelector('.input')).height; }
     } else if(app==='Linear') recordingInputHeight=ctx.w.getComputedStyle(ctx.d.querySelector('.input')).height;
     for(const img of ctx.d.querySelectorAll('img')) assert(fs.existsSync(root+'/site/'+img.getAttribute('src')));
   }
   assert.deepEqual([...seen].sort(),['ChatGPT','Gmail','Linear']);
   assert.deepEqual(order.slice(0,4),['Linear','Gmail','ChatGPT','Linear']);
-  assert(sawContinuousTyping);assert.equal(typingInputHeight,recordingInputHeight);
+  assert(firstResultAt<=3000,'The complete first result should appear within three seconds');
+  assert.equal(resultInputHeight,recordingInputHeight);
+  assert.equal(visibleResults.size,3);
+  for(const [app,results] of visibleResults) assert.equal(results.size,1,app+' must paste one complete result without intermediate text');
   assert(meterHeights.size>4,'Recording meter must respond to the reference voice, including reduced motion');
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));ctx.close();checks+=9;
   console.log(platform+' website: OS routing, Linear-first 3-app cycle, footer, continuous text, no demo controls PASS');

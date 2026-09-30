@@ -66,21 +66,19 @@
   .field span { color: var(--ink-3); width: 56px; }
   .mail { flex: 1; padding-top: 14px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
   .typed { white-space: pre-wrap; }
-  .caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -3px; margin-left: 1px; visibility: hidden; }
-  .is-typing .caret { visibility: visible; }
 
   .pill { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); opacity: 0; height: 40px; padding: 0 18px; border-radius: 20px; background: #fff; border: 1px solid rgba(0,0,0,.08);
-    box-shadow: 0 10px 30px rgba(0,0,0,.14); display: flex; align-items: center; gap: 4px; transition: opacity .25s ease; pointer-events: none; }
-  .pill-label { font-size: 12px; font-weight: 500; margin: 0 12px 0 2px; }
+    box-shadow: 0 3px 12px rgba(0,0,0,.12); display: flex; align-items: center; gap: 3px; transition: opacity .1s ease; pointer-events: none; }
+  .pill-label { font-size: 11px; font-weight: 500; margin: 0 8px 0 1px; }
   .pill.show { opacity: 1; }
-  .pill i { width: 3px; height: 4px; border-radius: 3px; background: var(--ink); transition: height .12s ease, opacity .2s ease; }
-  .pill.think i { height: 5px; opacity: .35; }
+  .pill i { width: 2px; height: 3px; border-radius: 2px; background: var(--ink); transition: height .08s ease, opacity .12s ease; }
+  .pill.think i { height: 3px; opacity: .35; }
   .pill.think i:nth-of-type(n+4) { display: none; }
 
   .app-logo { width: 23px; height: 23px; object-fit: contain; }
-  .pill-mark { width: 22px; height: 22px; margin-right: 9px; }
-  .win { animation: switch-app .5s cubic-bezier(.2,.8,.2,1); }
-  @keyframes switch-app { from { opacity: .15; transform: translateY(10px) scale(.97); } }
+  .pill-mark { width: 16px; height: 16px; margin-right: 6px; }
+  .win { animation: switch-app .16s ease-out; }
+  @keyframes switch-app { from { opacity: .45; } }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
   @media (prefers-reduced-motion: reduce) { *, *::after { animation: none !important; transition: none !important; } }
   @media (prefers-reduced-motion: reduce) { .pill i { transition: height .25s ease, opacity .25s ease !important; } }
@@ -110,8 +108,7 @@
   .msg { border-radius: 18px; padding: 15px 19px; }
   .input { height: 138px; flex: none; overflow: hidden; border-radius: 16px; padding: 16px 19px; }
   .doc-title { font-size: 28px; }
-  .pill { height: 46px; padding-inline: 15px; bottom: 22px; border-radius: 24px; box-shadow: 0 8px 28px #00000018; }
-  .pill i { width: 2.5px; }
+  .pill { height: 36px; padding-inline: 12px; bottom: 18px; border-radius: 18px; border-color: #00000024; }
   footer { display: flex; align-items: center; justify-content: space-between; height: 46px; font-size: 12px; color: #86868b; }
   footer a { display: inline-flex; padding: 8px; opacity: .65; }
   footer a:hover { opacity: 1; }
@@ -186,13 +183,13 @@
     let level = 0;
     for (let elapsed=0; elapsed<duration; elapsed+=interval) {
       if (thinking) {
-        bars.slice(0,3).forEach((bar,i) => { bar.style.height="5px"; bar.style.opacity = (.35 + .4*(.5+.5*Math.sin(elapsed/500-i))).toFixed(2); });
+        bars.slice(0,3).forEach((bar,i) => { bar.style.height="3px"; bar.style.opacity = (.35 + .4*(.5+.5*Math.sin(elapsed/500-i))).toFixed(2); });
       } else {
         const target = voiceLevels[Math.min(voiceLevels.length-1, Math.floor(elapsed/duration*voiceLevels.length))];
-        level += (reducedMotion ? .55 : .28) * (target-level);
+        level += (reducedMotion ? .55 : .4) * (target-level);
         bars.forEach((bar,i) => {
           const envelope = 1 - Math.abs(i-6)/6*.5;
-          bar.style.height = (4 + 22*level*envelope).toFixed(1)+"px";
+          bar.style.height = (3 + 17*level*envelope).toFixed(1)+"px";
         });
       }
       await wait(Math.min(interval,duration-elapsed));
@@ -220,13 +217,13 @@
     if (sc.kind === "chat" || sc.kind === "browser") {
       win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>${sc.title}</small></div>
         <div class="body">${sc.before.map((m) => `<div class="msg">${esc(m)}</div>`).join("")}
-        <div class="input"><span class="typed"></span><span class="caret"></span></div></div>`;
+        <div class="input"><span class="typed"></span></div></div>`;
     } else if (sc.kind === "doc") {
-      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>Draft</small></div><div class="body"><div class="doc-page"><div class="doc-title">${esc(sc.title)}</div><span class="typed"></span><span class="caret"></span></div></div>`;
+      win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>Draft</small></div><div class="body"><div class="doc-page"><div class="doc-title">${esc(sc.title)}</div><span class="typed"></span></div></div>`;
     } else {
       win.innerHTML = `<div class="bar"><img class="app-logo" src="assets/logos/${sc.logo}" alt=""><span>${sc.app}</span><small>New message</small></div>
         <div class="body"><div class="field"><span>To</span>${sc.to}</div><div class="field"><span>Subject</span>${sc.subject}</div>
-        <div class="mail"><span class="typed"></span><span class="caret"></span></div></div>`;
+        <div class="mail"><span class="typed"></span></div></div>`;
     }
     const p = pill(); win.appendChild(p); return p;
   }
@@ -234,23 +231,18 @@
   async function play(sc) {
     const p = render(sc);
     steps.classList.remove("held");
-    step(null); await wait(900);
+    step(null); await wait(200);
     steps.classList.add("held"); step("hold");
-    p.classList.add("show", "listen"); await wait(500);
-    step("talk"); await meter(p, 1500 + sc.text.length * 12);
+    p.classList.add("show", "listen"); await wait(100);
+    step("talk"); await meter(p, Math.min(1800, 900 + sc.text.length * 6));
     steps.classList.remove("held"); step("go");
     p.querySelector(".pill-label").textContent = "Thinking";
-    p.classList.replace("listen", "think"); await meter(p, 650, true);
+    p.classList.replace("listen", "think"); await meter(p, 300, true);
     p.classList.remove("show");
     const out = win.querySelector(".typed");
-    win.classList.add("is-typing");
-    // One continuous text node, without separate word animations or chunks.
-    for (let i=1; i<=sc.text.length; i++) {
-      out.textContent = sc.text.slice(0,i);
-      await wait(45);
-    }
-    win.classList.remove("is-typing");
-    await wait(3500);
+    // Dictation pastes the complete result in one operation, just like the app.
+    out.textContent = sc.text;
+    await wait(3000);
   }
   (async () => {
     for (;;) for (const scene of scenes) await play(scene);

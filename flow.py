@@ -517,15 +517,15 @@ class Flow:
         if self.hide_at and now > self.hide_at:
             self.set_state("idle")
 
-        self.t += 1 / 30
+        self.t += 1 / 60
         if self.recording:
             target = min(1.0, (self.level * 14) ** 0.8)
-            self.visual_level = getattr(self, "visual_level", 0) + .18 * (target - getattr(self, "visual_level", 0))
+            self.visual_level = getattr(self, "visual_level", 0) + .2 * (target - getattr(self, "visual_level", 0))
             self.levels.append(self.visual_level)
         else:
             self.visual_level = 0
         if self.state != "idle":
-            self.appear = min(1.0, self.appear + 0.12)
+            self.appear = min(1.0, self.appear + 0.25)
             locked = self.recording and self.mode == "hands"
             elapsed = now - (self.record_started if self.recording else self.state_started)
             self.pill.render(self.state, self.t, self.levels, self.message, self.appear, locked, elapsed)
@@ -542,7 +542,7 @@ class Flow:
                                  "practice_id": self.practice["id"] if self.practice else None, "error": self._last_error})
             except OSError:
                 pass  # A transient file lock must not stop the microphone/overlay loop.
-        self.root.after(33, self.tick)
+        self.root.after(16, self.tick)
 
     def handle_control(self, command):
         action, args = command.get("action"), command.get("args") or {}
