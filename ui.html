@@ -277,7 +277,7 @@ const CATS = [
   ["docs", "Docs and notes", "Word, Notion, Obsidian, Google Docs"],
   ["other", "Everything else", "Browsers and all other apps"],
 ];
-const APP_NAMES = Object.fromEntries(window.FLOW_APPS.flatMap(a => a.aliases.map(k => [k, a.name])));
+const APP_NAMES = Object.fromEntries(window.FLOW_APPS.flatMap(a => [a.id, ...a.aliases].map(k => [k.toLowerCase(), a.name])));
 const STYLE_EX = { formal: "Hey, are we still on for tonight? I can bring snacks.", casual: "Hey, are we still on for tonight? I can bring snacks", "very casual": "hey are we still on for tonight? i can bring snacks" };
 const $ = (s) => document.querySelector(s);
 const api = () => window.pywebview.api;
@@ -287,8 +287,10 @@ let M = { terms: [], fixes: [], scanned: null }, I = { words: 0, minutes_saved: 
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const kbd = (sc) => (SHORTCUTS[sc] || [sc]).map((k) => `<kbd>${k}</kbd>`).join("");
-const APP_LOGOS = Object.fromEntries(window.FLOW_APPS.flatMap(a => a.aliases.map(k => [k, a.logo])));
-const appName = (a) => { const k = (a || "").toLowerCase().replace(/\.exe$/, ""); return APP_NAMES[k] || (k ? k[0].toUpperCase() + k.slice(1) : ""); };
+const APP_LOGOS = Object.fromEntries(window.FLOW_APPS.flatMap(a => [a.id, ...a.aliases].map(k => [k.toLowerCase(), a.logo])));
+const appKey = (a) => (a || "").toLowerCase().replace(/\.exe$/, "");
+const appName = (a) => { const k = appKey(a); return APP_NAMES[k] || (k ? k[0].toUpperCase() + k.slice(1) : ""); };
+const appLogo = (a) => APP_LOGOS[appKey(a)];
 const mine = () => M.terms.filter((t) => ["you", "learned", "history", "project"].includes(t.source));
 const section = (title, aside = "") => `<div class="section"><h2>${title}</h2>${aside !== "" ? `<span class="aside">${aside}</span>` : ""}</div>`;
 
@@ -356,7 +358,7 @@ function renderHome() {
       <div class="stat"><b data-to="${I.known}">0</b><span>of your words learned</span></div>
     </div>`;
   if (I.apps.length) {
-    html += section("Where you talk") + `<div class="apps">${I.apps.map(([a, c]) => `<div class="appbar"><span class="app-name">${APP_LOGOS[a.toLowerCase()] ? `<img src="assets/logos/${APP_LOGOS[a.toLowerCase()]}" alt="">` : ""}${esc(appName(a))}</span><span class="track"><i style="width:${Math.max(3, c / top * 100)}%"></i></span><span class="c">${c}</span></div>`).join("")}</div>`;
+    html += section("Where you talk") + `<div class="apps">${I.apps.map(([a, c]) => `<div class="appbar"><span class="app-name">${appLogo(a) ? `<img src="assets/logos/${appLogo(a)}" alt="">` : ""}${esc(appName(a))}</span><span class="track"><i style="width:${Math.max(3, c / top * 100)}%"></i></span><span class="c">${c}</span></div>`).join("")}</div>`;
   }
   html += `<div class="section"><h2>Recent</h2><label class="search"><svg><use href="#i-search"/></svg><input id="q" placeholder="Search" spellcheck="false" value="${esc(query)}"></label></div>`;
   if (!items.length) {

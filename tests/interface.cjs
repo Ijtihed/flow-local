@@ -263,4 +263,18 @@ async function modelSetup() {
   assert(button(ctx,'Start using Flow'));
   assert.equal(ctx.errors.length,0);ctx.close();checks+=6;
 }
-(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});
+async function terminalHistory() {
+  const f=apiFixture();f.S.tutorial_seen=true;
+  f.api.insights=async()=>({words:30,minutes_saved:1,wpm:150,known:0,
+    apps:[['Windowsterminal',4],['WindowsTerminal.EXE',3],['windowsterminal',2],['pwsh.exe',1],['cmd',1]]});
+  f.api.history=async()=>[{ts:new Date(2026,8,30,9,35).toISOString(),text:'A saved terminal dictation.',app:'WindowsTerminal.exe',words:5,seconds:2,lang:'en'}];
+  const ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(500);
+  const rows=[...ctx.d.querySelectorAll('.app-name')];
+  assert.deepEqual(rows.map(row=>row.textContent),['Windows Terminal','Windows Terminal','Windows Terminal','PowerShell','Command Prompt']);
+  assert.deepEqual(rows.map(row=>row.querySelector('img')?.getAttribute('src')),
+    ['assets/logos/windowsterminal.svg','assets/logos/windowsterminal.svg','assets/logos/windowsterminal.svg','assets/logos/powershell.png','assets/logos/terminal.svg']);
+  assert(ctx.d.querySelector('.entry .meta').textContent.includes('Windows Terminal'));
+  assert.equal(ctx.errors.length,0);ctx.close();checks+=4;
+  console.log('Existing terminal history: friendly names and bundled icons PASS');
+}
+(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await terminalHistory();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});

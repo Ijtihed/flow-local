@@ -38,7 +38,7 @@ Windows 10/11 x64 and Linux x86_64. Local speech runs on CPU; an NVIDIA GPU can 
 - **Your engine.** Run Whisper locally, or connect a compatible transcription API with your own key.
 - **Your words.** Teach it names and jargon; correct a dictation to teach the spelling.
 - **Your writing style.** Formal emails, casual chats, and spoken shortcuts for text you repeat.
-- **Your apps.** Dictate wherever your system can paste text, with 65 familiar app identities and logos.
+- **Your apps.** Dictate wherever your system can paste text, with 74 familiar app identities and icons.
 - **Your assistant.** Configure Flow and extend it through MCP. Copy a connection config from Settings. [MCP guide](docs/MCP.md)
 
 <details>

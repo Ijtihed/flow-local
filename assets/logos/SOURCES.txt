@@ -41,7 +41,7 @@ Official asset: https://www.microsoft.com/content/dam/microsoft/bade/images/icon
 obsidian.svg
 Official asset: https://obsidian.md/images/obsidian-logo-gradient.svg
 
-Additional publisher assets for the 65-app catalog:
+Additional publisher assets for the 74-app catalog:
 
 googledocs.png
 Publisher page: https://docs.google.com
@@ -265,3 +265,36 @@ Asset: https://registry.npmjs.org/@atlaskit/logo/-/logo-23.3.1.tgz (package/dist
 scrivener.svg (specific product mark; exact icon-scrivener font outline)
 Publisher page: https://www.literatureandlatte.com/scrivener/overview
 Asset: https://www.literatureandlatte.com/wp-content/themes/toast/assets/fonts/Icons/icons.ttf (icon-scrivener glyph)
+
+Terminal identities:
+
+windowsterminal.svg
+Publisher page: https://github.com/microsoft/terminal
+Asset: https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/Terminal.svg
+
+powershell.png
+Publisher page: https://github.com/PowerShell/PowerShell
+Asset: https://raw.githubusercontent.com/PowerShell/PowerShell/master/assets/Square44x44Logo.targetsize-48_altform-unplated.png
+
+gnometerminal.svg
+Publisher page: https://gitlab.gnome.org/GNOME/gnome-terminal
+Asset: https://raw.githubusercontent.com/GNOME/gnome-terminal/master/data/icons/hicolor_apps_scalable_org.gnome.Terminal.svg
+
+konsole.png
+Publisher page: https://konsole.kde.org
+Asset: https://raw.githubusercontent.com/KDE/konsole/master/data/icons/48-apps-utilities-terminal.png
+
+kitty.svg
+Publisher page: https://sw.kovidgoyal.net/kitty/
+Asset: https://raw.githubusercontent.com/kovidgoyal/kitty/master/logo/kitty.svg
+
+alacritty.svg
+Publisher page: https://alacritty.org
+Asset: https://raw.githubusercontent.com/alacritty/alacritty/master/extra/logo/alacritty-simple.svg
+
+wezterm.svg
+Publisher page: https://wezterm.org
+Asset: https://raw.githubusercontent.com/wezterm/wezterm/main/assets/icon/wezterm-icon.svg
+
+terminal.svg
+Original Flow UI glyph for generic terminal hosts and Command Prompt; MIT license. Not a publisher logo.

@@ -54,6 +54,38 @@ class AppCatalog(unittest.TestCase):
         self.assertEqual(apps.resolve_app(("unknown-editor", "My document")), "unknown-editor")
         self.assertEqual(apps.resolve_app(("", "")), "")
 
+    def test_terminal_hosts_use_their_identity_and_code_category(self):
+        cases = [("WindowsTerminal.exe", "windowsterminal", "Windows Terminal"),
+                 ("wt", "windowsterminal", "Windows Terminal"),
+                 ("pwsh.exe", "powershell", "PowerShell"),
+                 ("cmd.exe", "commandprompt", "Command Prompt"),
+                 ("conhost", "terminal", "Terminal"),
+                 ("gnome-terminal-server", "gnometerminal", "GNOME Terminal"),
+                 ("org.kde.konsole", "konsole", "Konsole"),
+                 ("kitty", "kitty", "kitty"),
+                 ("Alacritty", "alacritty", "Alacritty"),
+                 ("wezterm-gui.exe", "wezterm", "WezTerm")]
+        for process, ident, name in cases:
+            with self.subTest(process=process):
+                self.assertEqual(apps.resolve_app((process, "Telegram - shell output")), ident)
+                self.assertEqual(apps.display_name(process), name)
+                self.assertEqual(app_category((process, "Shell")), "code")
+
+    def test_existing_terminal_history_is_grouped_without_rewriting_it(self):
+        from ui import Api
+        fixture = [{"app": name, "words": 3, "seconds": 2}
+                   for name in ("Windowsterminal", "WindowsTerminal.exe", "wt", "pwsh")]
+        with tempfile.TemporaryDirectory() as folder:
+            history = Path(folder) / "history.jsonl"
+            raw = "".join(json.dumps(item) + "\n" for item in fixture)
+            history.write_text(raw, "utf-8")
+            api = Api()
+            api._mem = type("MemoryFixture", (), {"terms": lambda self: []})()
+            with patch("ui.HISTORY", history):
+                self.assertEqual(api.insights()["apps"], [("windowsterminal", 3), ("powershell", 1)])
+                self.assertEqual(api.history(), fixture[::-1])
+            self.assertEqual(history.read_text("utf-8"), raw)
+
     def test_history_records_web_app_without_storing_title(self):
         flow = Flow.__new__(Flow)
         flow.target_app = ("firefox", "Secret budget draft - Google Docs - Mozilla Firefox")
