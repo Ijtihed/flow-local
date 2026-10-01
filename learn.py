@@ -22,7 +22,11 @@ def focused_text():
         c = auto.GetFocusedControl()
         if c is None or c.IsPassword:
             return None, None
-        key = (c.ProcessId, c.ControlTypeName, c.AutomationId, c.Name[:40] if c.Name else "")
+        try:
+            runtime_id = tuple(c.GetRuntimeId())
+        except Exception:
+            runtime_id = None
+        key = (c.ProcessId, runtime_id, c.ControlTypeName, c.AutomationId, c.Name[:40] if c.Name else "")
         try:
             vp = c.GetValuePattern()
             if vp and vp.Value:
@@ -59,15 +63,19 @@ def find_edited(pasted, field):
 
 def watch(pasted, memory, on_learned):
     def run():
-        key0 = None
-        for i, delay in enumerate(CHECKS):
-            time.sleep(delay - (CHECKS[i - 1] if i else 0))
+        try:
+            key0, initial = focused_text()
+        except Exception:
+            return
+        if key0 is None or not initial or pasted not in initial:
+            return
+        observed = time.monotonic()
+        for delay in CHECKS:
+            time.sleep(max(0, observed + delay - time.monotonic()))
             try:
                 key, field = focused_text()
             except Exception:
                 return
-            if key0 is None:
-                key0 = key
             if field is None or key != key0:
                 return                     # focus moved on: not our text box any more
             region = find_edited(pasted, field)
@@ -76,4 +84,6 @@ def watch(pasted, memory, on_learned):
                 if learned:
                     on_learned(learned)
                     return
-    threading.Thread(target=run, daemon=True).start()
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    return worker

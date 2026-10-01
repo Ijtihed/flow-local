@@ -273,6 +273,8 @@ class Manager:
             if self.state['phase'] in ('checking', 'downloading', 'installing'):
                 return False
             self.state.update(phase=phase, message='', progress=0)
+            if phase == 'checking':
+                self.state['check_id'] = self.state.get('check_id', 0) + 1
         def worker():
             try:
                 work()
@@ -321,7 +323,7 @@ class Automatic:
     """One scheduler in the tray process; windows share its status and commands."""
     def __init__(self, manager, on_install, reserve):
         self.manager, self.on_install, self.reserve = manager, on_install, reserve
-        self.next_check = time.monotonic() + 30
+        self.next_check = time.monotonic()
         self.idle_since = time.monotonic()
         self.previous = 'idle'
 
@@ -338,8 +340,7 @@ class Automatic:
             self.previous = phase
         if not enabled:
             self.idle_since = now
-            return
-        if phase == 'available' and idle and now - self.idle_since >= 60:
+        if enabled and phase == 'available' and idle and now - self.idle_since >= 60:
             self.manager.apply(self.on_install, can_install=lambda: self.reserve(True))
         elif phase not in ('checking', 'downloading', 'installing', 'available') and now >= self.next_check:
             self.next_check = now + 6 * 60 * 60

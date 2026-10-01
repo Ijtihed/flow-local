@@ -448,6 +448,7 @@ class Flow:
 
     def open_ui(self):
         if self.ui is not None and self.ui.poll() is None:
+            self.updater.check()
             if IS_WIN:
                 from system import focus_process
                 focus_process(self.ui.pid)
@@ -517,7 +518,7 @@ class Flow:
                     if self.mode != "compose":
                         self.set_state("typing")
                         pasted = self.paste(text)
-                    if self.settings.get("learn", True) and self.mode != "compose":
+                    if pasted and self.settings.get("learn", True) and self.mode != "compose":
                         learn.watch(text, self.memory, lambda pairs: self.events.put(("learned", pairs)))
                     self.save(text, seconds, lang, latency)
                     if self.mode == "compose" or pasted:
@@ -540,13 +541,19 @@ class Flow:
             return self.quit()
         if hasattr(self, 'auto_updater'):
             phase = self.updater.status()['phase']
+            if (phase == 'available' and self.settings.get('onboarded') and self.ready and
+                    not self.recording and not self.busy and not self.practice and
+                    self.updater.status().get('latest') != getattr(self, 'notified_update', None)):
+                self.notified_update = self.updater.status().get('latest')
+                self.open_ui()
             if phase == 'error':
                 if self.updating:
                     self.open_ui()
                 self.updating = False
             self.auto_updater.tick(self.settings.get('auto_update', True) and self.settings.get('onboarded') and
                                    (paths.FROZEN or bool(__import__('os').environ.get('APPIMAGE'))),
-                                   self.ready and not self.recording and not self.busy and not self.practice)
+                                   self.ready and not self.recording and not self.busy and not self.practice and
+                                   (self.ui is None or self.ui.poll() is not None))
         if self.practice and self.recording:
             if not control.lease_alive(self.practice["id"]):
                 self.cancel()

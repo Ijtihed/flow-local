@@ -12,6 +12,8 @@ Setup asks what to call you, which languages you use, and which speech engine an
 
 Dictionary stores names, terms and confirmed corrections. Edit a mistaken dictation in Recent to teach its spelling. Spoken shortcuts expand phrases: “my email” can insert your full address. Writing styles follow the app category. Optional daily voice notes save dictations to Obsidian.
 
+Corrections are saved in your local dictionary and reused by future dictations, including after restarting. Windows can notice edits in the same accessible text field at six and twenty seconds after a successful paste; switching fields or using a password field cancels that observation. Repeated automatic spelling repairs are confirmed after separate observations. Editing a dictation in Recent explicitly teaches the correction on both Windows and Linux, including capitalization of unfamiliar names.
+
 ## Speech engines
 
 ### Local speech
@@ -34,7 +36,9 @@ Download only from [Flow's GitHub releases](https://github.com/Ijtihed/flow-loca
 
 To verify on Windows, compare `Get-FileHash .\FlowSetup.exe -Algorithm SHA256` with the corresponding SHA256SUMS.txt entry. On Linux, download both files into one folder and run `sha256sum --ignore-missing -c SHA256SUMS.txt`.
 
-Automatic updates are enabled by default. Flow checks after startup and every six hours, retries offline failures after fifteen minutes, verifies the download digest, and installs after sixty seconds without dictation or processing. Disable Automatic updates to check and install manually. Settings, names, history, dictionaries, speech keys and models remain in the data folder. Linux keeps the previous AppImage beside the new one and requires a writable location. Reconnect your MCP client after an update.
+Flow checks immediately at startup, every time you open its window, and every six hours. A newer release shows a popup with Update and Later; it waits until setup, practice and active dictation have finished. Offline checks stay quiet and retry after fifteen minutes. Checks continue with Automatic updates disabled, so the popup can still offer a manual update.
+
+Automatic installation is enabled by default. It verifies the download digest and waits until the window is closed and sixty seconds have passed without dictation or processing. Settings, names, history, dictionaries, speech keys and models remain in the data folder. Linux keeps the previous AppImage beside the new one and requires a writable location. Reconnect your MCP client after an update.
 
 Public downloads and updates need no GitHub account or token. GitHub access in Settings is for private repositories and release management only. Tokens are protected separately from speech keys and sent only to GitHub's API.
 

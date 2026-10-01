@@ -15,14 +15,15 @@ let checks=0;
 function apiFixture(platform='windows', fresh=false) {
   const S={...clone(base),platform,onboarded:!fresh,name:fresh?'':base.name};
   const calls=[];
+  let checkCount=0;
   const practice={phase:'ready',ready:true,matched:false,level:0,elapsed:0};
   const recording={ready:true,recording:false,busy:false,phase:'idle',elapsed:0};
   const diagnostic={status:'passed',version:'1.5.0'};
   const updates={phase:'idle',current:base.version,publisher:false};
   const history=fresh ? [] : Array.from({length:12},(_,i)=>({ts:new Date(2026,8,30,9,i).toISOString(),text:'Please send the project notes.',app:i%2?'firefox':'telegram',words:5,seconds:2,lang:'en'}));
-  return {S,calls,practice,recording,diagnostic,updates,api:{
+  return {S,calls,practice,recording,diagnostic,updates,get checkCount(){return checkCount},api:{
     update_status:async()=>clone(updates),
-    check_updates:async()=>{Object.assign(updates,{phase:'checking',message:''});return true},
+    check_updates:async()=>{checkCount++;Object.assign(updates,{phase:'checking',message:'',check_id:checkCount});return true},
     install_update:async()=>{calls.push({action:'update'});Object.assign(updates,{phase:'downloading',progress:0});return true},
     save_update_access:async token=>{calls.push({action:'access',token});Object.assign(updates,{phase:'checking',message:''});return true},
     forget_update_access:async()=>true,publish_update:async()=>{calls.push({action:'publish'});return true},
@@ -70,6 +71,9 @@ async function ui(platform) {
   const ctx=dom(read('ui.html'),{api:f.api});
   await ctx.clock.tickAsync(500);
   assert.equal(ctx.d.querySelector('#tutorial').hidden,false);
+  Object.assign(f.updates,{phase:'available',latest:'1.6.0'});await ctx.clock.tickAsync(500);
+  assert(ctx.d.querySelector('#updateDialog').hidden,'Finish practice before showing the update popup');
+  Object.assign(f.updates,{phase:'current'});
   assert.equal(ctx.d.querySelectorAll('.brand').length,1);
   assert(!ctx.d.body.textContent.includes('Private, on this PC'));
   assert.equal(ctx.d.querySelector('#platformLabel').textContent,'v1.5.1');
@@ -156,11 +160,13 @@ async function ui(platform) {
   assert(!ctx.d.querySelector('#reportDialog').hidden);
   assert.equal(JSON.parse(ctx.d.querySelector('#reportText').value).status,'failed');
   button(ctx,'Close').click();assert(ctx.d.querySelector('#reportDialog').hidden);
+  Object.assign(f.updates,{phase:'current'});await ctx.clock.tickAsync(500);
   button(ctx,'Check for updates').click();await ctx.clock.tickAsync(20);
   assert(button(ctx,'Checking…').disabled);
   Object.assign(f.updates,{phase:'available',latest:'1.6.0',publisher:true});await ctx.clock.tickAsync(500);
   assert(ctx.d.querySelector('#updateMessage').textContent.includes('1.6.0'));
   assert(!ctx.d.querySelector('#publishUpdates').hidden);
+  ctx.d.querySelector('#updateLater').click();
   button(ctx,'Publish update on GitHub').click();await ctx.clock.tickAsync(20);
   assert.equal(f.calls.at(-1).action,'publish');
   button(ctx,'Update').click();await ctx.clock.tickAsync(20);assert.equal(f.calls.at(-1).action,'update');
@@ -277,4 +283,40 @@ async function terminalHistory() {
   assert.equal(ctx.errors.length,0);ctx.close();checks+=4;
   console.log('Existing terminal history: friendly names and bundled icons PASS');
 }
-(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await terminalHistory();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});
+async function startupUpdatePopup() {
+  for (const platform of ['windows','linux']) {
+    const f=apiFixture(platform);f.S.tutorial_version=2;f.S.auto_update=false;
+    const ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(500);
+    assert.equal(f.checkCount,1,'Opening the app must check with automatic installation disabled');
+    assert(ctx.d.querySelector('#updateDialog').hidden);
+    Object.assign(f.updates,{phase:'error',message:'Offline'});await ctx.clock.tickAsync(500);
+    assert(ctx.d.querySelector('#updateDialog').hidden,'Offline startup checks stay quiet');
+    Object.assign(f.updates,{phase:'available',latest:'1.6.0',recording:true,message:''});await ctx.clock.tickAsync(500);
+    assert(ctx.d.querySelector('#updateDialog').hidden,'A popup must not steal focus while dictating');
+    const search=ctx.d.querySelector('input[placeholder="Search"]');search.focus();
+    f.updates.recording=false;await ctx.clock.tickAsync(500);
+    assert(ctx.d.querySelector('#updateDialog').hidden,'An update must wait while editing text');
+    const home=ctx.d.querySelector('.nav.on');home.focus();await ctx.clock.tickAsync(500);
+    const dialog=ctx.d.querySelector('#updateDialog');assert(!dialog.hidden);
+    assert(ctx.d.querySelector('#updateDetail').textContent.includes('1.6.0'));
+    assert(ctx.d.querySelector('#scroll').inert);assert(ctx.d.querySelector('aside').inert);
+    const now=ctx.d.querySelector('#updateNow'),later=ctx.d.querySelector('#updateLater');
+    assert.equal(ctx.d.activeElement,now);
+    now.dispatchEvent(new ctx.w.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}));
+    assert.equal(ctx.d.activeElement,later);
+    later.click();assert(dialog.hidden);assert.equal(ctx.d.activeElement,home);
+    await ctx.clock.tickAsync(1500);assert(dialog.hidden,'Later dismisses this check instead of reopening every poll');
+    f.updates.check_id++;await ctx.clock.tickAsync(500);assert(!dialog.hidden);
+    now.click();await ctx.clock.tickAsync(500);assert.equal(f.calls.at(-1).action,'update');
+    assert(now.disabled);f.updates.progress=42;await ctx.clock.tickAsync(500);
+    assert.equal(ctx.d.querySelector('#popupProgress').value,42);
+    Object.assign(f.updates,{phase:'error',message:'Download failed. Try again.'});await ctx.clock.tickAsync(500);
+    assert.equal(now.textContent,'Try again');assert(!now.disabled);
+    now.click();await ctx.clock.tickAsync(500);assert.equal(f.checkCount,2);
+    Object.assign(f.updates,{phase:'current'});await ctx.clock.tickAsync(500);
+    assert(dialog.hidden);assert(!ctx.d.querySelector('#scroll').inert);
+    assert.equal(ctx.errors.length,0);ctx.close();checks+=12;
+  }
+  console.log('Windows/Linux startup updates: popup, dismissal, retries and focus protection PASS');
+}
+(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await terminalHistory();await startupUpdatePopup();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});

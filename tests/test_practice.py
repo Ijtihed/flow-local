@@ -272,6 +272,12 @@ class Practice(unittest.TestCase):
         f.events.put(("done","A new thought.",1.2,"en",.4));f.tick()
         f.paste.assert_not_called();f.save.assert_called_once()
 
+    def test_failed_paste_does_not_monitor_an_unrelated_field(self):
+        f = self.fixture();f.mode='ptt';f.settings['learn']=True;f.paste.return_value=False
+        with patch('flow.learn.watch') as watch:
+            f.events.put(('done','A new thought.',1.2,'en',.4));f.tick()
+            watch.assert_not_called()
+
     def test_audio_meter_smooths_changes_without_stalling_recording(self):
         f=self.fixture();f.recording=True;f.mode='hands';f.record_started=time.time();f.level=.05
         target=min(1,(f.level*14)**.8)

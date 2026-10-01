@@ -23,8 +23,7 @@ class AutomaticUpdates(unittest.TestCase):
 
     def test_checks_without_opening_settings_and_retries_offline(self):
         scheduler, manager, _, _ = self.scheduler()
-        scheduler.tick(True, True, 129); manager.check.assert_not_called()
-        scheduler.tick(True, True, 130); manager.check.assert_called_once()
+        scheduler.tick(True, True, 100); manager.check.assert_called_once()
         manager.status.return_value = {'phase': 'error'}
         scheduler.tick(True, True, 131)
         scheduler.tick(True, True, 1030); self.assertEqual(manager.check.call_count, 1)
@@ -39,11 +38,13 @@ class AutomaticUpdates(unittest.TestCase):
         self.assertTrue(manager.apply.call_args.kwargs['can_install']())
         reserve.assert_called_once_with(True)
 
-    def test_disabled_automatic_updates_do_not_check_or_install(self):
+    def test_disabled_automatic_installation_still_checks_for_updates(self):
         for phase in ('idle', 'available'):
             scheduler, manager, _, _ = self.scheduler(phase)
             scheduler.tick(False, True, 1000)
-            manager.check.assert_not_called(); manager.apply.assert_not_called()
+            if phase == 'idle': manager.check.assert_called_once()
+            else: manager.check.assert_not_called()
+            manager.apply.assert_not_called()
 
     def test_post_download_reservation_refuses_handoff_when_user_resumes(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(paths, 'DATA', Path(folder)):
@@ -82,6 +83,12 @@ class AutomaticUpdates(unittest.TestCase):
         with patch('sounddevice.InputStream') as capture:
             flow.start('ptt')
         capture.assert_not_called()
+
+    def test_reopening_the_existing_window_checks_again(self):
+        flow=Flow.__new__(Flow);flow.ui=Mock();flow.ui.poll.return_value=None;flow.updater=Mock()
+        with patch('flow.IS_WIN',False), patch('flow.subprocess.Popen') as launch:
+            flow.open_ui();flow.open_ui()
+        self.assertEqual(flow.updater.check.call_count,2);launch.assert_not_called()
 
 
 if __name__ == '__main__': unittest.main()

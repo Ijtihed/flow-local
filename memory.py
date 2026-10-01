@@ -111,7 +111,7 @@ class Memory:
     def _dirty(self):
         self._cache = None
 
-    def add_term(self, text, source="you", seen=0):
+    def add_term(self, text, source="you", seen=0, update_case=False):
         text = re.sub(r"\s+", " ", text).strip()
         if not text or len(text) > 60:
             return
@@ -122,6 +122,8 @@ class Memory:
             elif WEIGHT.get(source, 0) > WEIGHT.get(row[0], 0):
                 # a stronger source wins; also adopt its exact casing
                 self.db.execute("UPDATE terms SET text=?, source=?, hidden=0 WHERE text=?", (text, source, text))
+            elif update_case:
+                self.db.execute("UPDATE terms SET text=? WHERE text=?", (text, text))
             elif source == row[0] and seen:
                 self.db.execute("UPDATE terms SET seen=? WHERE text=?", (seen, text))
             self.db.commit()
@@ -287,6 +289,12 @@ class Memory:
         sm = difflib.SequenceMatcher(a=[w.lower() for w in a], b=[w.lower() for w in b], autojunk=False)
         learned = []
         for op, i1, i2, j1, j2 in sm.get_opcodes():
+            if op == 'equal':
+                for original, corrected in zip(a[i1:i2], b[j1:j2]):
+                    if original != corrected and corrected != corrected.lower() and self.is_rare(corrected):
+                        self.add_term(corrected, 'learned', update_case=True)
+                        learned.append((original, corrected))
+                continue
             if op != "replace" or not (1 <= i2 - i1 <= 3 and 1 <= j2 - j1 <= 3):
                 continue
             heard, meant = " ".join(a[i1:i2]), " ".join(b[j1:j2])

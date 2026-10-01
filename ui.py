@@ -200,6 +200,8 @@ class Api:
 
     def update_status(self):
         state = self._updates().status()
+        runtime = control.state()
+        state.update(recording=bool(runtime.get('recording')), busy=bool(runtime.get('busy')))
         if state.get('phase') == 'installing' and not getattr(self, '_update_closing', False):
             self._update_closing = True
             if hasattr(self, '_window'):

@@ -60,6 +60,9 @@ def run_window():
             def update_status(self):
                 return {'phase': 'current', 'current': APP_VERSION}
 
+            def check_updates(self):
+                return True  # Native UI checks never contact the release service.
+
         api = ProbeApi()
         win = ui.create_window(api)
         watchdog = threading.Timer(30, timed_out)

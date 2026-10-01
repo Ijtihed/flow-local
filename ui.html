@@ -181,6 +181,12 @@
   .update-access summary { cursor: pointer; }
   .update-access .adder { margin-top: 12px; }
   .update-progress { width: 100%; height: 3px; accent-color: var(--ink); margin-top: 10px; }
+  .update-dialog { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; background: #0003; }
+  .update-card { width: min(360px, 100%); padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 16px 60px #0002; animation: update-in .14s var(--ease) both; }
+  .update-card h2 { font-size: 25px; line-height: 1.2; letter-spacing: -.6px; margin: 0 0 10px; }
+  .update-card p { color: var(--ink-2); font-size: 14px; line-height: 1.5; margin: 0 0 22px; }
+  .update-actions { display: flex; justify-content: flex-end; align-items: center; gap: 18px; }
+  @keyframes update-in { from { opacity: 0; transform: translateY(5px) scale(.985); } to { opacity: 1; transform: none; } }
   .speech-form { border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 16px 0; }
   .speech-form .field { width: 100%; min-width: 0; }
   .speech-form label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 500; }
@@ -260,6 +266,7 @@
 <div class="app-chrome pywebview-drag-region" id="appChrome" hidden><button data-window="minimize" aria-label="Minimize">−</button><button data-window="maximize" aria-label="Maximize or restore">□</button><button data-window="close" aria-label="Close">×</button></div>
 <div class="tutorial" id="tutorial" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden></div>
 <div class="toast" id="toast"></div>
+<div class="update-dialog" id="updateDialog" role="dialog" aria-modal="true" aria-labelledby="updateTitle" hidden><div class="update-card"><h2 id="updateTitle">An update is ready</h2><p id="updateDetail" role="status"></p><progress class="update-progress" id="popupProgress" max="100" value="0" hidden></progress><div class="update-actions"><button class="link" id="updateLater">Later</button><button class="btn" id="updateNow">Update</button></div></div></div>
 <div class="health-notice" id="healthNotice" role="alert" hidden><b>Speech check needs attention</b><p>Flow couldn't verify your speech engine. Review the report and attach it to your support message.</p><button class="link" id="reviewReport">Review report</button></div>
 <div class="report-dialog" id="reportDialog" role="dialog" aria-modal="true" aria-labelledby="reportTitle" hidden><div class="report-card"><h2 id="reportTitle">Speech check</h2><p id="reportSummary"></p><p>This report excludes your recordings, history and API key. Nothing is sent automatically.</p><textarea id="reportText" readonly aria-label="Speech diagnostic report"></textarea><div class="report-actions"><button class="btn" id="copyReport">Copy report</button><button class="link" id="exportReport">Save report</button><button class="link" id="closeReport">Close</button></div></div></div>
 
@@ -599,6 +606,53 @@ function renderSettings() {
 
 // ---------------------------------------------------------------- updates
 let updateTimer, updateBusy = false;
+let updatePolling = false, updateFocus, popupState = {}, updateRequested = false;
+const updateSeen = new Set();
+function closeUpdatePopup() {
+  updateSeen.add(`${popupState.latest}/${popupState.check_id || 0}`);
+  $("#updateDialog").hidden = true;
+  $("#scroll").inert = false; $("aside").inert = false;
+  if (updateFocus && updateFocus.isConnected) updateFocus.focus();
+}
+function drawUpdatePopup(state) {
+  popupState = state;
+  const dialog = $("#updateDialog"), busy = ["downloading", "installing"].includes(state.phase);
+  const notice = `${state.latest}/${state.check_id || 0}`;
+  if (dialog.hidden) {
+    if (state.phase !== "available" || !state.latest || state.recording || state.busy || updateSeen.has(notice) || !S.onboarded ||
+        !$("#ob").hidden || !$("#tutorial").hidden || !$("#reportDialog").hidden || document.activeElement?.isContentEditable ||
+        document.activeElement?.matches('input, textarea, select')) return;
+    updateFocus = document.activeElement; dialog.hidden = false;
+    $("#scroll").inert = true; $("aside").inert = true; $("#updateNow").focus();
+  }
+  if (state.phase === "current") { closeUpdatePopup(); return; }
+  $("#updateTitle").textContent = state.phase === "installing" ? "Restarting Flow" : state.phase === "downloading" ? "Updating Flow" : "An update is ready";
+  $("#updateDetail").textContent = state.message || (state.phase === "installing" ? "Your saved data stays here." : state.phase === "downloading" ? `Downloading · ${state.progress || 0}%` : `Flow ${state.latest} is ready. Your saved data stays here.`);
+  $("#updateNow").disabled = busy || updateRequested || state.phase === "checking";
+  $("#updateNow").textContent = busy ? "Updating…" : state.phase === "error" ? "Try again" : "Update";
+  $("#popupProgress").hidden = state.phase !== "downloading";
+  $("#popupProgress").value = state.progress || 0;
+  $("#updateLater").disabled = state.phase === "installing";
+  $("#updateLater").textContent = busy ? "Hide" : "Later";
+}
+$("#updateLater").onclick = closeUpdatePopup;
+$("#updateNow").onclick = async () => {
+  updateRequested = true; $("#updateNow").disabled = true;
+  try {
+    if (popupState.phase === "available") await api().install_update();
+    else await api().check_updates();
+  } catch (error) { $("#updateDetail").textContent = error.message || String(error); }
+  finally { updateRequested = false; await pollUpdates(); }
+};
+$("#updateDialog").addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#updateLater").disabled) { e.preventDefault(); closeUpdatePopup(); }
+  if (e.key === "Tab") {
+    const buttons = [...$("#updateDialog").querySelectorAll('button')].filter(b => !b.disabled);
+    const first = buttons[0], last = buttons.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
 function drawUpdate(state) {
   if (view !== "settings" || !$("#checkUpdates")) return;
   const button = $("#checkUpdates"), progress = $("#updateProgress");
@@ -612,11 +666,14 @@ function drawUpdate(state) {
   if (state.phase === "error" && /private release|GitHub access/i.test(state.message || '')) $("#updateAccess").open = true;
 }
 async function pollUpdates() {
-  if (view !== "settings") { clearInterval(updateTimer); return; }
-  try { drawUpdate(await api().update_status()); } catch { $("#updateMessage").textContent = "Could not check update status. Try again."; }
+  if (updatePolling) return;
+  updatePolling = true;
+  try { const state = await api().update_status(); drawUpdate(state); drawUpdatePopup(state); }
+  catch { if ($("#updateMessage")) $("#updateMessage").textContent = "Could not check update status. Try again."; }
+  finally { updatePolling = false; }
 }
 function bindUpdates() {
-  clearInterval(updateTimer); pollUpdates(); updateTimer = setInterval(pollUpdates, 500);
+  pollUpdates();
   $("#checkUpdates").onclick = async e => {
     const button = e.currentTarget; button.disabled = true;
     try {
@@ -907,7 +964,8 @@ async function init() {
   await boot();
   if (S.onboarded && S.tutorial_version !== 2) showTutorial();
   await refreshDiagnostics(); setInterval(refreshDiagnostics, 2500);
-  setInterval(() => api().update_status().catch(() => {}), 1000);
+  try { await api().check_updates(); } catch (_) {}
+  await pollUpdates(); updateTimer = setInterval(pollUpdates, 500);
   setInterval(updateGreeting, 60000);
 }
 if (window.pywebview && window.pywebview.api && window.pywebview.api.settings) init();
