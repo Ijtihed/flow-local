@@ -72,11 +72,15 @@ def run_window():
                 while time.monotonic() < deadline:
                     state = win.evaluate_js("""({tutorial: !document.querySelector('#tutorial').hidden,
                         title: document.querySelector('#tourTitle')?.textContent,
-                        enabled: document.querySelector('#practiceAction')?.disabled === false,
+                        ready: document.querySelector('#practiceOutput')?.dataset.ready === 'true',
+                        blank: document.querySelector('#practiceOutput')?.value === '',
+                        readonly: document.querySelector('#practiceOutput')?.readOnly === true,
+                        locked: document.querySelector('#practiceAction')?.hidden === true,
                         phrase: document.querySelector('#practicePhrase')?.textContent,
                         empty: document.querySelector('.empty')?.textContent.includes('Nothing yet.')})""")
                     if (getattr(win, '_flow_style_applied', False) and state['tutorial']
-                            and state['enabled'] and state['phrase'] != 'Getting ready…' and state['empty']):
+                            and state['ready'] and state['blank'] and state['readonly'] and state['locked']
+                            and state['phrase'] and state['empty']):
                         report.update(ok=True, native_window='responsive', icon='applied on GUI thread',
                                       tutorial='visible, initialized, ready to record', history='empty')
                         break

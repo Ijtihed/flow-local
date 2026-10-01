@@ -80,19 +80,39 @@ async function ui(platform) {
   assert(!f.S.tutorial_seen);
   ctx.d.dispatchEvent(new ctx.w.KeyboardEvent('keydown',{key:'Escape'}));await ctx.clock.tickAsync(20);
   assert(!ctx.d.querySelector('#tutorial').hidden);
-  ctx.d.querySelector('#practiceAction').click();await ctx.clock.tickAsync(250);
-  assert.equal(ctx.d.querySelector('#practiceMeter').dataset.state,'recording');
-  assert(parseFloat(ctx.d.querySelector('.practice-bars i').style.height)>4);
-  button(ctx,'Finish').click();await ctx.clock.tickAsync(250);
+  const output=ctx.d.querySelector('#practiceOutput'),next=ctx.d.querySelector('#practiceAction');
+  assert.equal(output.tagName,'TEXTAREA');assert(output.readOnly);assert.equal(output.value,'');
+  assert.equal(ctx.d.activeElement,output);assert(next.hidden&&next.disabled);
+  assert(!ctx.d.querySelector('.practice-steps'));assert(ctx.d.querySelector('#practiceOptions').hidden);assert(!button(ctx,'Record'));
+  Object.assign(f.practice,{phase:'error',ready:false,message:'The speech engine could not start.'});await ctx.clock.tickAsync(250);
+  assert(!ctx.d.querySelector('#practiceOptions').hidden,'A failed engine must remain recoverable');
+  button(ctx,'Speech settings').click();assert(!ctx.d.querySelector('#practiceOptionsPanel').hidden);
+  Object.assign(f.practice,{phase:'ready',ready:true,message:''});
+  button(ctx,'Use this engine').click();await ctx.clock.tickAsync(250);
+  assert.equal(f.calls.at(-1).model,'small');f.calls.length=0;
+  assert(ctx.d.querySelector('#practiceOptionsPanel').hidden);assert.equal(ctx.d.activeElement,output);
+  output.value='I can speak instead of typing.';await ctx.clock.tickAsync(250);
+  assert(next.hidden&&next.disabled,'Typed text must not pass the speech check');
+  Object.assign(f.practice,{phase:'recording',level:.7,elapsed:2,text:undefined});await ctx.clock.tickAsync(250);
+  assert.equal(ctx.d.querySelector('#tutorial').dataset.state,'recording');assert.equal(output.value,'');
+  Object.assign(f.practice,{phase:'thinking',level:0,elapsed:1});await ctx.clock.tickAsync(250);
   assert.equal(ctx.d.querySelector('#practiceState').textContent,'Thinking…');
-  assert(button(ctx,'Thinking…').disabled);
+  assert.equal(output.value,'');assert(next.hidden&&next.disabled);
   Object.assign(f.practice,{phase:'retry',matched:false,text:'This is a different sentence.',message:'Try again.'});await ctx.clock.tickAsync(250);
-  assert(!button(ctx,'Start using Flow'));
-  button(ctx,'Try again').click();await ctx.clock.tickAsync(250);button(ctx,'Finish').click();await ctx.clock.tickAsync(250);
+  assert.equal(output.value,'This is a different sentence.');assert(next.hidden&&next.disabled);
+  Object.assign(f.practice,{phase:'recording',text:undefined,message:''});await ctx.clock.tickAsync(250);
+  assert.equal(output.value,'','A new attempt starts with an empty box');
+  Object.assign(f.practice,{phase:'thinking'});await ctx.clock.tickAsync(250);
   Object.assign(f.practice,{phase:'passed',matched:true,text:'I can speak instead of typing.'});await ctx.clock.tickAsync(250);
   assert(ctx.d.querySelector('#tourHint').textContent.includes(platform==='linux'?'Super':'Win'));
-  button(ctx,'Start using Flow').click();await ctx.clock.tickAsync(20);
+  assert.equal(output.value,'I can speak instead of typing.');assert(!next.hidden&&!next.disabled);
+  output.focus();ctx.d.dispatchEvent(new ctx.w.KeyboardEvent('keydown',{key:'Tab',shiftKey:true,cancelable:true}));
+  assert.equal(ctx.d.activeElement,next,'Tab stays inside the tutorial');
+  next.click();await ctx.clock.tickAsync(20);
+  assert(!ctx.d.querySelector('#tutorial').hidden);assert(ctx.d.querySelector('#scroll').inert);
+  await ctx.clock.tickAsync(300);
   assert(f.S.tutorial_seen);assert.equal(ctx.d.querySelector('#tutorial').hidden,true);
+  assert.equal(ctx.d.querySelector('#scroll').inert,false);
   assert(!button(ctx,'Record'),'Home uses the global dictation shortcut');
   assert(ctx.d.querySelector('.lede').textContent.includes('Hold'));
   assert(ctx.d.querySelector('#healthNotice').hidden,'Successful checks remain silent');
@@ -152,8 +172,8 @@ async function ui(platform) {
   assert.equal(ctx.errors.length,0,ctx.errors.map(e=>e.message).join('\n'));
   ctx.close();checks+=29;console.log(platform+' UI: tutorial, branding, logos, greetings, shortcuts, model/API selection, diagnostic warning, updates PASS');
 }
-async function setup(platform) {
-  const f=apiFixture(platform,true),ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(50);
+async function setup(platform,reducedMotion=false) {
+  const f=apiFixture(platform,true),ctx=dom(read('ui.html'),{api:f.api,reducedMotion});await ctx.clock.tickAsync(50);
   button(ctx,'Get started').click();
   assert.equal(ctx.d.querySelector('#obName').value,'','Do not guess the name from the OS account');
   assert(button(ctx,'Continue').disabled);
@@ -164,6 +184,8 @@ async function setup(platform) {
   assert.equal(f.calls.length,0);assert(!ctx.d.querySelector('#setupSpeech-error').hidden);
   ctx.d.querySelector('#setupSpeech [data-provider="local"]').click();change(ctx,'setupSpeech-model','large-v3-turbo');
   button(ctx,'Continue').click();await ctx.clock.tickAsync(20);button(ctx,'Start using Flow').click();await ctx.clock.tickAsync(20);
+  if(!reducedMotion){assert(ctx.d.querySelector('#ob').classList.contains('leaving'));assert(!ctx.d.querySelector('#ob').hidden);assert(ctx.d.querySelector('#tutorial').hidden);assert(ctx.d.querySelector('#scroll').inert);await ctx.clock.tickAsync(300);}
+  assert(ctx.d.querySelector('#ob').hidden);assert(!ctx.d.querySelector('#ob').classList.contains('leaving'));
   assert(f.S.onboarded);assert.equal(f.S.name,'Alex');assert.equal(f.calls[0].model,'large-v3-turbo');assert(!ctx.d.querySelector('#tutorial').hidden);
   assert.equal(ctx.errors.length,0);ctx.close();checks+=7;console.log(platform+' first-run setup: required name, model choice and consent PASS');
 }
@@ -236,4 +258,4 @@ async function modelSetup() {
   assert(button(ctx,'Start using Flow'));
   assert.equal(ctx.errors.length,0);ctx.close();checks+=6;
 }
-(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await modelSetup();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' interface assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});
+(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});
