@@ -2,7 +2,7 @@
 
 Flow ships a local stdio MCP server built with the [official Python SDK](https://github.com/modelcontextprotocol/python-sdk). An assistant can configure the app, teach vocabulary, manage spoken shortcuts, inspect history, select engines, download models, check updates and run real dictation. It uses the same implementation as the app. Connecting does not start recording or upload audio.
 
-MCP is included in Flow 1.5.14 and newer. Older downloads through 1.5.11 do not contain it.
+MCP is included in Flow 1.5.15 and newer. Older downloads through 1.5.11 do not contain it.
 
 ## Quick connection
 

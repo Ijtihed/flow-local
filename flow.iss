@@ -2,7 +2,7 @@
 ; Per-user install, no admin prompt. The speech model and GPU libraries download during first-run setup.
 
 #define AppName "Flow"
-#define AppVersion "1.5.14"
+#define AppVersion "1.5.15"
 
 [Setup]
 AppId={{6F1B5A0E-2C4D-4F3B-9E1A-3F10D1C7A7E0}

@@ -6,7 +6,7 @@ if [[ $(uname -m) != x86_64 ]]; then echo 'This build targets Linux x86_64.' >&2
 VENV="${FLOW_BUILD_VENV:-.venv-linux}"
 if [[ ! -x "$VENV/bin/python" ]]; then
     python3 -m venv "$VENV"
-    "$VENV/bin/pip" install --upgrade pip
+    "$VENV/bin/pip" install --upgrade pip setuptools
     "$VENV/bin/pip" install -r requirements.txt pyinstaller
 fi
 "$VENV/bin/python" tools/collect_licenses.py
