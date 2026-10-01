@@ -11,7 +11,8 @@ METHODS = {"stamp", "history", "delete", "clear", "copy", "edit", "settings", "s
            "insights", "memory", "add_term", "remove_term", "remove_fix", "scan_vaults",
            "enable_voice_notes", "system", "setup_run", "setup_status", "finish_onboarding",
     "configure_speech", "forget_api_key", "recording_status", "record_start", "record_stop", "record_cancel",
-    "practice_open", "practice_start", "practice_stop", "practice_cancel", "practice_status", "practice_complete"}
+    "practice_open", "practice_start", "practice_stop", "practice_cancel", "practice_status", "practice_complete",
+    "practice_focus", "practice_close"}
 METHODS.update({"diagnostics", "copy_speech_report", "export_speech_report"})
 METHODS.update({"update_status", "check_updates", "install_update", "save_update_access", "forget_update_access", "publish_update"})
 

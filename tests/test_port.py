@@ -46,6 +46,8 @@ class Bridge(unittest.TestCase):
         class DemoApi:
             def settings(self): return {"platform": "linux", "name": "Alex"}
             def save_settings(self, patch): return patch
+            def practice_focus(self, focused): return {"focused": focused}
+            def practice_close(self): return {"closed": True}
         self.server, self.url = make_server(DemoApi())
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -79,6 +81,16 @@ class Bridge(unittest.TestCase):
     def test_private_methods_and_invalid_args(self):
         self.assert_status(Request(self.url + "api/_memory", data=b"[]", headers={"Content-Type": "application/json"}), 404)
         self.assert_status(Request(self.url + "api/settings", data=b"{}", headers={"Content-Type": "application/json"}), 400)
+
+    def test_tutorial_focus_and_close_rpc(self):
+        for method, args, expected in (("practice_focus", [False], {"focused": False}),
+                                       ("practice_focus", [True], {"focused": True}),
+                                       ("practice_close", [], {"closed": True})):
+            with self.subTest(method=method, args=args):
+                req = Request(self.url + "api/" + method, data=json.dumps(args).encode(),
+                              headers={"Content-Type": "application/json"})
+                with urlopen(req) as r:
+                    self.assertEqual(json.load(r), expected)
 
 
 if __name__ == "__main__":
