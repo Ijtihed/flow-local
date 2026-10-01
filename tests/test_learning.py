@@ -9,8 +9,42 @@ from unittest.mock import Mock, patch
 import learn
 from memory import Memory
 from ui import Api
+from engine import Engine
 
 class Learning(unittest.TestCase):
+    def test_manual_word_and_confirmed_repair_are_persisted(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'memory.db'
+            api = Api(); api._mem = Memory(path)
+            api.add_term(' AsterByte ', ' AsterBytek ')
+            self.assertEqual(api._mem.correct('Ask AsterBytek.'), 'Ask AsterByte.')
+            api._mem.db.close()
+            restarted = Memory(path)
+            self.assertEqual(restarted.correct('Ask AsterBytek.'), 'Ask AsterByte.')
+            restarted.db.close()
+
+    def test_manual_word_validation_reports_unsaved_input(self):
+        api = Api()
+        for word, heard in [('', ''), (' '*3, ''), ('x'*61, ''), ('word', 'x'*121), ('bad\nword', ''), (None, '')]:
+            with self.assertRaises(ValueError): api.add_term(word, heard)
+
+    def test_personal_pass_repairs_suffix_spelling_with_crowded_vocabulary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            memory = Memory(Path(folder) / 'memory.db')
+            memory.add_term('AsterByte')
+            for i in range(40): memory.add_term(f'LongSyntheticProjectNumber{i}')
+            self.assertEqual(memory.core_terms(preferred=['AsterByte'])[0], 'AsterByte')
+            self.assertIn('AsterByte', memory.candidates('I use AsterBytek.'))
+            self.assertNotIn('AsterByte', memory.candidates('I use AsterByte.'))
+            engine = Engine(memory)
+            with patch.object(engine, 'pick_languages', return_value=(['en'],1.0)), patch.object(engine, '_mixed', return_value=None), patch.object(engine, '_decode', side_effect=[('I use AsterBytek.',-.1,'en'), ('I use AsterByte.',-.1,'en')]) as decode:
+                text, language = engine.transcribe([], {'languages':['en'],'name':'AsterByte'})
+            self.assertEqual(text, 'I use AsterByte.')
+            self.assertEqual(language, 'en')
+            self.assertTrue(decode.call_args.args[2].startswith('AsterByte,'))
+            self.assertEqual(engine.finish(text, {'styles':{'personal':'very casual'}}, ('telegram','')), 'i use AsterByte')
+            memory.db.close()
+
     def test_history_edit_teaches_future_dictation_and_survives_restart(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)

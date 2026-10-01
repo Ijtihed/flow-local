@@ -319,4 +319,35 @@ async function startupUpdatePopup() {
   }
   console.log('Windows/Linux startup updates: popup, dismissal, retries and focus protection PASS');
 }
-(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await terminalHistory();await startupUpdatePopup();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});
+async function manualDictionary() {
+  for (const platform of ['windows','linux']) {
+    const f=apiFixture(platform);f.S.tutorial_version=2;
+    const terms=[],fixes=[];let fail=false;
+    f.api.memory=async()=>({terms:clone(terms),fixes:clone(fixes),scanned:null});
+    f.api.add_term=async(word,heard)=>{if(fail)throw new Error('Could not save word');terms.push({text:word,source:'you'});if(heard)fixes.push({heard,term:word,active:true});};
+    const ctx=dom(read('ui.html'),{api:f.api});await ctx.clock.tickAsync(500);
+    button(ctx,'Dictionary').click();
+    for (const id of ['d-word','d-heard']) {
+      const field=ctx.d.getElementById(id);
+      for (const key of ['a','Backspace','ArrowLeft','Tab']) {
+        const event=new ctx.w.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});
+        assert(field.dispatchEvent(event),`${id} must allow normal typing and navigation`);
+      }
+    }
+    input(ctx,'d-word','AsterByte');input(ctx,'d-heard','AsterBytek');
+    const field=ctx.d.getElementById('d-word');field.focus();await ctx.clock.tickAsync(1800);
+    assert.equal(field.value,'AsterByte');assert(!button(ctx,'Add word').disabled);
+    const enter=new ctx.w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true});
+    assert(!field.dispatchEvent(enter));await ctx.clock.tickAsync(20);
+    assert.equal(terms[0].text,'AsterByte');assert.equal(fixes[0].heard,'AsterBytek');
+    assert(ctx.d.querySelector('.chips').textContent.includes('AsterByte'));
+    input(ctx,'d-word','AnotherWord');button(ctx,'Add word').click();await ctx.clock.tickAsync(20);
+    assert.equal(terms[1].text,'AnotherWord');
+    fail=true;input(ctx,'d-word','KeepMyInput');button(ctx,'Add word').click();await ctx.clock.tickAsync(20);
+    assert.equal(ctx.d.getElementById('d-word').value,'KeepMyInput');
+    assert(ctx.d.getElementById('toast').textContent.includes('Could not save word'));
+    assert(!button(ctx,'Add word').disabled);assert.equal(ctx.errors.length,0);ctx.close();checks+=12;
+  }
+  console.log('Windows/Linux dictionary: typing, Enter, click, persistence feedback and save errors PASS');
+}
+(async()=>{await ui('windows');await ui('linux');await setup('windows');await setup('linux');await setup('windows',true);await modelSetup();await terminalHistory();await startupUpdatePopup();await manualDictionary();await website('Win32');await website('Linux x86_64');await website('MacIntel');await website('Win32',undefined,true);await website('Linux armv8l','Mozilla/5.0 Android');await website('iPhone','Mozilla/5.0 iPhone');await website('MacIntel','Mozilla/5.0 Macintosh Safari',false,5);console.log(checks+' grouped interface checks passed');})().catch(e=>{console.error(e);process.exitCode=1;});

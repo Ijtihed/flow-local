@@ -420,11 +420,11 @@ function renderDictionary() {
   const you = M.terms.filter((t) => t.source === "you" || t.source === "learned");
   const notes = by("notes"), projects = by("project"), said = by("history"), built = [...by("tech"), ...by("slang")];
   const scan = M.scanned ? JSON.parse(M.scanned) : null;
-  let html = `<h1>Dictionary</h1><p class="lede">The words that make it you. Flow listens for them, spells them your way, and learns from every fix.</p>
+  let html = `<h1>Dictionary</h1><p class="lede">Add the spelling you want. If Flow gets it wrong, add what it writes too.</p>
     <div class="adder">
-      <input class="field" id="d-word" placeholder="Add a word or a name" spellcheck="false">
-      <input class="field" id="d-heard" placeholder="It keeps writing… (optional)" spellcheck="false">
-      <button class="btn" id="d-add" disabled>Add</button></div>
+      <input class="field" id="d-word" placeholder="Add a word or a name" aria-label="Word or name" maxlength="60" spellcheck="false">
+      <input class="field" id="d-heard" placeholder="It keeps writing… (optional)" aria-label="What Flow writes instead (optional)" maxlength="120" spellcheck="false">
+      <button class="btn" id="d-add" disabled>Add word</button></div>
     ${section("Yours", you.length)}${you.length ? `<div class="chips">${you.map(chip).join("")}</div>` : `<div class="empty">Words you add, and words Flow learns from your fixes.</div>`}`;
   if (M.fixes.length) {
     html += section("Fixes it applies") + M.fixes.map((f) => `<div class="row"><div class="l fix"><span class="from">${esc(f.heard)}</span><span>→</span><span>${esc(f.term)}</span>${f.active ? "" : `<span class="note">active after one more</span>`}</div>
@@ -444,8 +444,17 @@ function renderDictionary() {
   $("#view").innerHTML = html;
   const w = $("#d-word"), hh = $("#d-heard"), b = $("#d-add");
   w.oninput = () => (b.disabled = !w.value.trim());
-  const add = async () => { const word = w.value.trim(); if (!word) return; await api().add_term(word, hh.value.trim()); M = await api().memory(); render(); toast("Added " + word); $("#d-word").focus(); };
-  b.onclick = add; [w, hh].forEach((el) => el.onkeydown = (e) => e.key === "Enter" && add());
+  let adding = false;
+  const add = async () => {
+    const word = w.value.trim(); if (!word || adding) return;
+    adding = true; b.disabled = true;
+    try { await api().add_term(word, hh.value.trim()); M = await api().memory(); render(); toast("Added " + word); $("#d-word").focus(); }
+    catch (error) { toast(error.message || String(error)); }
+    finally { adding = false; if (b.isConnected) b.disabled = !w.value.trim(); }
+  };
+  b.onclick = add; [w, hh].forEach((el) => el.onkeydown = (e) => {
+    if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); add(); }
+  });
   document.querySelectorAll("[data-rm]").forEach((el) => el.onclick = async () => { await api().remove_term(el.dataset.rm); M = await api().memory(); render(); });
   document.querySelectorAll("[data-rmfix]").forEach((el) => el.onclick = async () => { await api().remove_fix(el.dataset.rmfix, el.dataset.term); M = await api().memory(); render(); });
   $("#d-scan").onclick = async () => { if (scanning) return; scanning = true; render(); const r = await api().scan_vaults(); scanning = false; M = await api().memory(); render(); toast(`Found ${r.terms} terms in ${r.files} notes`); };

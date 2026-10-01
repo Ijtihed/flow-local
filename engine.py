@@ -175,7 +175,8 @@ def graft(first, second, terms):
     from memory import sound_key
     out = first
     for t in terms:
-        if norm(t) not in norm(second) or norm(t) in norm(out):
+        pattern = rf"(?<!\w){re.escape(t)}(?!\w)"
+        if not re.search(pattern, second, re.IGNORECASE) or re.search(pattern, out, re.IGNORECASE):
             continue
         toks = list(re.finditer(WORD_RE, out))
         n_t = len(t.split())
@@ -339,7 +340,8 @@ class Engine:
             return self.memory.correct(text) if text else text, lang
         langs = [l for l in settings.get("languages") or [] if l]
         mem = self.memory
-        core = mem.core_terms()
+        name = settings.get("name", "")
+        core = mem.core_terms(preferred=[name, *name.split()] if isinstance(name, str) and name else [])
 
         picked, conf = self.pick_languages(audio, langs, with_conf=True)
         mixed = self._mixed(audio, langs, core)
@@ -348,7 +350,7 @@ class Engine:
             for c, lang, text, score in mixed:
                 cands = mem.candidates(text)
                 if cands:
-                    p2 = mem.prompt(core + cands, lang)
+                    p2 = mem.prompt(cands + core, lang)
                     t2, s2, _ = self._decode(c, lang, p2)
                     if t2 and not self._echoes_prompt(t2, p2) and s2 >= score - 0.12:
                         text = graft(text, t2, cands)
@@ -373,7 +375,7 @@ class Engine:
 
         cands = mem.candidates(text) if text else []
         if cands:
-            p2 = mem.prompt(core + cands, lang)
+            p2 = mem.prompt(cands + core, lang)
             text2, score2, _ = self._decode(audio, lang, p2)
             if text2 and not self._echoes_prompt(text2, p2) and score2 >= score - 0.12:
                 merged = graft(text, text2, cands)
@@ -427,6 +429,7 @@ class Engine:
         if chat and sentences <= 2 and short:  # like Wispr: chats never get a trailing period
             text = drop_period(text)
 
+        text = self.memory.canonical_case(text)
         for s in settings.get("snippets", []):
             if s.get("trigger") and s.get("text"):
                 text = re.sub(rf"(?<!\w){re.escape(s['trigger'])}(?!\w)[.]?", lambda _: s["text"], text, flags=re.IGNORECASE)

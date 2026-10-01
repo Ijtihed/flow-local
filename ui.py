@@ -262,6 +262,11 @@ class Api:
         return self._memory().listing()
 
     def add_term(self, word, heard=""):
+        if not isinstance(word, str) or not 1 <= len(word.strip()) <= 60 or any(ord(c) < 32 for c in word):
+            raise ValueError("Enter a word or name of up to 60 characters.")
+        if not isinstance(heard, str) or len(heard.strip()) > 120 or any(ord(c) < 32 for c in heard):
+            raise ValueError("Enter the spelling Flow writes (up to 120 characters).")
+        word, heard = word.strip(), heard.strip()
         m = self._memory()
         m.add_term(word, "you")
         if heard:

@@ -12,6 +12,8 @@ Setup asks what to call you, which languages you use, and which speech engine an
 
 Dictionary stores names, terms and confirmed corrections. Edit a mistaken dictation in Recent to teach its spelling. Spoken shortcuts expand phrases: “my email” can insert your full address. Writing styles follow the app category. Optional daily voice notes save dictations to Obsidian.
 
+To add your own vocabulary, open Dictionary, type the correct spelling, and click Add word or press Enter. The optional second field teaches an immediate correction for what Flow writes instead. Your setup name has priority in the personal recognition pass; matching vocabulary is placed before other terms so a long dictionary cannot crowd it out. Saved personal capitalization survives Very casual formatting.
+
 Corrections are saved in your local dictionary and reused by future dictations, including after restarting. Windows can notice edits in the same accessible text field at six and twenty seconds after a successful paste; switching fields or using a password field cancels that observation. Repeated automatic spelling repairs are confirmed after separate observations. Editing a dictation in Recent explicitly teaches the correction on both Windows and Linux, including capitalization of unfamiliar names.
 
 ## Speech engines

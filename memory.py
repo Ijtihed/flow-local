@@ -3,7 +3,7 @@
 Everything lives in data/memory.db (SQLite, this PC only).
 
 How it's used for every dictation
-  1. prompt()      core terms (your name, words you added) prime Whisper's first pass
+  1. prompt()      core terms (your name, words you added) prime Whisper's personal pass
   2. candidates()  personal terms that *sound like* something in the first-pass text are looked up
                    with a sound-alike key ("Ishtihad" and "Ijtihed" share one), then fed to a second,
                    primed pass; the audio still has the final say
@@ -157,24 +157,25 @@ class Memory:
 
     # ------------------------------------------------------------ recognition
 
-    def core_terms(self):
+    def core_terms(self, preferred=()):
         """Primes every dictation: your own words, then the names you mention most in notes and speech."""
         with self.lock:
             q = lambda src, n, order: [r[0] for r in self.db.execute(
                 f"SELECT text FROM terms WHERE hidden=0 AND source=? ORDER BY {order} LIMIT ?", (src, n))]
-            return (q("you", 10, "uses DESC, created") + q("learned", 8, "uses DESC, created DESC")
-                    + q("history", 4, "uses DESC") + q("notes", 5, "uses DESC, seen DESC"))
+            return list(dict.fromkeys([t for t in preferred if t] + q("you", 24, "uses DESC, created DESC")
+                    + q("learned", 8, "uses DESC, created DESC")
+                    + q("history", 4, "uses DESC") + q("notes", 5, "uses DESC, seen DESC")))
 
     def candidates(self, hypothesis, limit=16):
         """Personal terms that sound like a span of the hypothesis but aren't spelled that way in it."""
         toks = words(hypothesis)
         if not toks:
             return []
-        present = norm(hypothesis)
         spans = set()
         for n in (1, 2, 3):
             for i in range(len(toks) - n + 1):
                 spans.add(" ".join(toks[i:i + n]))
+        present = {norm(s) for s in spans}
         span_keys = [(s, sound_key(s), norm(s)) for s in spans]
         best = {}
         for text, source, weight, key in self.terms():
@@ -254,6 +255,10 @@ class Memory:
             pat = r"(?<!\w)" + r"[\s\-_]*".join(re.escape(ch) for ch in flat) + r"(?!\w)"
             text = re.sub(pat, t, text, flags=re.IGNORECASE)
 
+        return self.canonical_case(text)
+
+    def canonical_case(self, text):
+        """Restore personal spellings after a writing style lowercases ordinary text."""
         # canonical casing for rare personal terms ("github" -> "GitHub", "ijtihed" -> "Ijtihed")
         for t, source, weight, key in self.terms():
             if t != t.lower() and self.is_rare(t):
