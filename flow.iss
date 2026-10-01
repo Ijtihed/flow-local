@@ -10,6 +10,11 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher=Flow
+#ifdef FlowSigned
+SignTool=FlowSigner
+SignedUninstaller=yes
+SignToolRunMinimized=yes
+#endif
 DefaultDirName={localappdata}\Programs\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes

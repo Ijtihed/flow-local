@@ -67,6 +67,8 @@ An NVIDIA GPU accelerates local speech. Flow also runs on the CPU and falls back
 
 ## App updates
 
+Windows releases through 1.5.11 are unsigned. New Windows releases require trusted, timestamped code signing for the app, installer and uninstaller before publishing. See [Windows signing setup](docs/WINDOWS_SIGNING.md) for the required verified account. Signing reduces SmartScreen interruptions as publisher reputation builds; it does not guarantee immediate trust for a new publisher.
+
 Automatic updates are enabled by default. Flow checks in the background after startup and every six hours, downloads a newer release and installs after sixty seconds without dictation or processing. Offline checks retry after fifteen minutes. Disable **Automatic updates** in Settings to use **Check for updates → Update** yourself. Flow verifies the SHA-256 digest and restarts. Settings, names, history, dictionaries, speech keys and downloaded models stay in the data folder. Linux keeps the previous AppImage beside the new one; its location must be writable. Windows installers are currently unsigned.
 
 The repository is currently private. Use your own GitHub token with **Contents: read** access under **GitHub access**, or an existing GitHub CLI sign-in. Tokens are protected by Windows DPAPI or a mode-0600 file on Linux, kept separately from speech keys and sent only to GitHub's API. Public releases work without a token if the owner later makes the repository public.
@@ -100,6 +102,8 @@ bash build-linux.sh
 `build-linux.sh` builds `installer/Flow-x86_64.AppImage` with PyInstaller and the official [AppImage packaging tools](https://docs.appimage.org/packaging-guide/manual.html). Speech models and NVIDIA libraries are downloaded during setup. For source installs, GPU libraries can also be installed with `pip install -r requirements-gpu.txt`.
 
 Run `python -m unittest discover -s tests -v` for platform and settings-server checks. Run `Flow.exe --self-test` or `./Flow-x86_64.AppImage --self-test` on a desktop to verify the bundled speech runtime, audio devices, assets and overlay without modifying your personal data.
+
+On Windows, `./tests/signing.ps1` checks release signing configuration, rejects unsigned files and unexpected publishers, and verifies a real trusted, timestamped signature without accessing any signing keys.
 
 `--self-test-headless` checks the packaged runtime and assets without opening a window or inspecting audio/GPU devices. Add `--test-report report.json` for a saved result (useful with the Windows GUI executable).
 

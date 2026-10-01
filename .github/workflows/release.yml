@@ -13,6 +13,15 @@ jobs:
     uses: ./.github/workflows/ci.yml
   build:
     needs: checks
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      FLOW_SIGNING_PROVIDER: ${{ vars.FLOW_SIGNING_PROVIDER }}
+      FLOW_SIGNING_ENDPOINT: ${{ vars.FLOW_SIGNING_ENDPOINT }}
+      FLOW_SIGNING_ACCOUNT: ${{ vars.FLOW_SIGNING_ACCOUNT }}
+      FLOW_SIGNING_PROFILE: ${{ vars.FLOW_SIGNING_PROFILE }}
+      FLOW_SIGNER_SUBJECT: ${{ vars.FLOW_SIGNER_SUBJECT }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-22.04]
@@ -26,6 +35,31 @@ jobs:
       - name: Validate release version
         shell: bash
         run: python tools/release_version.py --check
+      - name: Require verified Windows signing configuration
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          Import-Module ./tools/signing.psm1
+          Assert-FlowSigningConfiguration
+          if ($env:FLOW_SIGNING_PROVIDER -ne 'azure') { throw 'Hosted releases require Azure Artifact Signing. See docs/WINDOWS_SIGNING.md for other signing providers.' }
+          foreach ($name in 'AZURE_CLIENT_ID','AZURE_TENANT_ID','AZURE_SUBSCRIPTION_ID') {
+            if (-not [Environment]::GetEnvironmentVariable($name)) { throw "Missing $name. Complete docs/WINDOWS_SIGNING.md before publishing." }
+          }
+      - name: Authenticate signing account
+        if: runner.os == 'Windows'
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Install official signing module
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Install-Module ArtifactSigning -RequiredVersion 0.1.20 -Scope CurrentUser -Repository PSGallery -Force
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-venv python3-tk libportaudio2 xclip xdotool
       - if: runner.os == 'Windows'
@@ -33,7 +67,7 @@ jobs:
         run: |
           python -m venv .venv
           .\.venv\Scripts\pip install -r requirements.txt pyinstaller
-          .\build.ps1
+          .\build.ps1 -Signed
           $flowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-headless','--test-report','windows-runtime.json' -WindowStyle Hidden -Wait -PassThru
           if ($flowTest.ExitCode -ne 0) { throw 'Packaged runtime failed' }
           $windowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-window','--test-report','windows-window.json' -WindowStyle Hidden -Wait -PassThru
@@ -53,6 +87,7 @@ jobs:
             installer/Flow-x86_64.AppImage.sha256
             *-runtime.json
             windows-window.json
+            windows-signatures.json
           if-no-files-found: error
           retention-days: 7
   publish:
