@@ -11,8 +11,10 @@ concurrency:
 jobs:
   checks:
     uses: ./.github/workflows/ci.yml
-  build:
+  build-windows:
     needs: checks
+    runs-on: windows-latest
+    environment: windows-signing
     permissions:
       contents: read
       id-token: write
@@ -22,10 +24,6 @@ jobs:
       FLOW_SIGNING_ACCOUNT: ${{ vars.FLOW_SIGNING_ACCOUNT }}
       FLOW_SIGNING_PROFILE: ${{ vars.FLOW_SIGNING_PROFILE }}
       FLOW_SIGNER_SUBJECT: ${{ vars.FLOW_SIGNER_SUBJECT }}
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-22.04]
-    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.0.0
@@ -36,7 +34,6 @@ jobs:
         shell: bash
         run: python tools/release_version.py --check
       - name: Require verified Windows signing configuration
-        if: runner.os == 'Windows'
         shell: pwsh
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -50,19 +47,15 @@ jobs:
             if (-not [Environment]::GetEnvironmentVariable($name)) { throw "Missing $name. Complete docs/WINDOWS_SIGNING.md before publishing." }
           }
       - name: Authenticate signing account
-        if: runner.os == 'Windows'
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Install official signing module
-        if: runner.os == 'Windows'
         shell: pwsh
         run: Install-Module ArtifactSigning -RequiredVersion 0.1.20 -Scope CurrentUser -Repository PSGallery -Force
-      - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y python3-venv python3-tk libportaudio2 xclip xdotool
-      - if: runner.os == 'Windows'
+      - name: Build signed Windows packages and check the runtime
         shell: pwsh
         run: |
           python -m venv .venv
@@ -72,26 +65,44 @@ jobs:
           if ($flowTest.ExitCode -ne 0) { throw 'Packaged runtime failed' }
           $windowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-window','--test-report','windows-window.json' -WindowStyle Hidden -Wait -PassThru
           if ($windowTest.ExitCode -ne 0) { throw 'Packaged native window or tutorial failed' }
-      - if: runner.os == 'Linux'
-        shell: bash
+      - uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: flow-Windows
+          path: |
+            installer/FlowSetup.exe
+            *-runtime.json
+            windows-window.json
+            windows-signatures.json
+          if-no-files-found: error
+          retention-days: 7
+  build-linux:
+    needs: checks
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python tools/release_version.py --check
+      - run: sudo apt-get update && sudo apt-get install -y python3-venv python3-tk libportaudio2 xclip xdotool
+      - name: Build Linux package and check the runtime
         run: |
           bash build-linux.sh
           installer/Flow-x86_64.AppImage --appimage-extract-and-run --self-test-headless --test-report linux-runtime.json
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
-          name: flow-${{ runner.os }}
+          name: flow-Linux
           path: |
-            installer/FlowSetup.exe
             installer/Flow-x86_64.AppImage
             installer/Flow-x86_64.AppImage.sha256
-            *-runtime.json
-            windows-window.json
-            windows-signatures.json
+            linux-runtime.json
           if-no-files-found: error
           retention-days: 7
   publish:
-    needs: build
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-22.04
     permissions:
       contents: write

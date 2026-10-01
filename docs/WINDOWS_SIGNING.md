@@ -14,7 +14,7 @@ The prepared hosted workflow uses Azure Artifact Signing. Its Public Trust servi
 
 Once the account and profile are approved:
 
-1. Create an Entra application/service principal for this repository's release builds. Add a GitHub federated credential restricted to a release tag subject, for example `repo:Ijtihed/flow-local:ref:refs/tags/v1.5.12`, with issuer `https://token.actions.githubusercontent.com` and audience `api://AzureADTokenExchange`. Add each later tag, or deliberately configure a supported scoped federation policy. A `main` branch credential is needed only if manually publishing from that branch. Do not trust arbitrary repositories or pull requests.
+1. Create a GitHub environment named `windows-signing`, restrict deployment branches/tags to release tags `v*` (and `main` if manually publishing from that branch), and review who can change its configuration. Create an Entra application/service principal for release signing. Add a GitHub federated credential with subject `repo:Ijtihed/flow-local:environment:windows-signing`, issuer `https://token.actions.githubusercontent.com` and audience `api://AzureADTokenExchange`. This stays valid across release versions. Only the Windows release job requests a signing token; Linux and ordinary CI do not.
 2. Grant **Artifact Signing Certificate Profile Signer** on the intended profile only. The signing identity does not need subscription Owner or Contributor. Creating this access is an owner/account-administrator action.
 3. In GitHub **Settings → Secrets and variables → Actions → Variables**, enter:
 
