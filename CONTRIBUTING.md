@@ -1,6 +1,6 @@
 # Contributing to Flow
 
-Start with [source setup and platform notes](README.md#build-from-source). Keep Windows and Linux working, preserve the simple UI, and use example data in screenshots and recordings.
+Start with [source setup and platform notes](docs/DEVELOPMENT.md). Keep Windows and Linux working, preserve the simple UI, and use example data in screenshots and recordings.
 
 The UI and MCP server share `ui.Api`. Put reusable behavior there instead of giving the protocol a different implementation. Runtime commands and recording leases live in `control.py`; recognition and cleanup live in `engine.py`; dictionary changes live in `memory.py`. Settings use `paths.save_settings()` and user data stays outside the application folder.
 
@@ -19,4 +19,4 @@ Install the interface test dependencies with `npm ci --prefix tests`. Speech-eng
 
 Do not commit credentials, personal profiles, model downloads or recordings. Test microphone and model work using isolated profiles and bundled fixtures. Explain the user-visible behavior and relevant validation in your pull request. Windows signing changes must retain verification of the GUI app, MCP companion, installer and uninstaller.
 
-For releases, use `python tools/release_version.py VERSION` to align every version field. See [the publication checklist](docs/PUBLISHING.md). Local unsigned builds are previews, not signed releases.
+For releases, use `python tools/release_version.py VERSION` to align every version field. See [the publication checklist](docs/PUBLISHING.md). Unsigned builds must be described as unsigned; an explicitly requested signed build must pass trusted-signature verification.

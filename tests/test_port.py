@@ -59,6 +59,8 @@ class Bridge(unittest.TestCase):
 
     def test_page_assets_and_rpc(self):
         with urlopen(self.url) as r:
+            self.assertEqual(r.headers["X-Frame-Options"], "DENY")
+            self.assertIn("frame-ancestors 'none'", r.headers["Content-Security-Policy"])
             self.assertIn(b"window.pywebview", r.read())
         with urlopen(self.url + "assets/PlexSans-400.woff2") as r:
             self.assertEqual(r.read(4), b"wOF2")

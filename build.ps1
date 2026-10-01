@@ -11,6 +11,8 @@ if ($Signed) {
 }
 .\.venv\Scripts\pip install pyinstaller | Out-Null
 .\.venv\Scripts\python -c "import icons; from pathlib import Path; icons.ensure_app_ico(Path('assets/flow.ico'), force=True); icons.app_icon(256).save('assets/logo.png')"
+.\.venv\Scripts\python tools/collect_licenses.py
+if ($LASTEXITCODE -ne 0) { throw 'License collection failed' }
 .\.venv\Scripts\pyinstaller flow.spec --noconfirm
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed" }
 if ($Signed) { foreach ($flowBinary in 'dist\Flow\Flow.exe','dist\Flow\FlowMCP.exe') { Invoke-FlowSigning -Path $flowBinary | Out-Host } }
@@ -28,6 +30,6 @@ if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
 if ($Signed) {
     & (Join-Path $PSScriptRoot 'tools\sign-windows.ps1') -Mode Verify -Path 'dist\Flow\Flow.exe','dist\Flow\FlowMCP.exe','installer\FlowSetup.exe' -Report 'windows-signatures.json'
 } else {
-    Write-Warning 'Development installer is unsigned. Publish update requires verified signing.'
+    Write-Warning 'Windows installer is unsigned. SmartScreen may show an unrecognized-app warning.'
 }
 Write-Host "Done: installer\FlowSetup.exe"

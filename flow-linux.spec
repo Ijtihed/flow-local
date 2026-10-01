@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules, copy_metadata
 from pathlib import Path
 
-datas = [("ui.html", "."), ("assets", "assets"), ("LICENSE", ".")]
+datas = [("ui.html", "."), ("assets", "assets"), ("LICENSE", "."), ("build/THIRD_PARTY_NOTICES.txt", ".")]
 for package in ("faster_whisper", "wordfreq"):
     datas += collect_data_files(package)
 datas += collect_data_files("mcp")

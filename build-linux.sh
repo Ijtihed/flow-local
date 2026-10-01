@@ -9,6 +9,7 @@ if [[ ! -x "$VENV/bin/python" ]]; then
     "$VENV/bin/pip" install --upgrade pip
     "$VENV/bin/pip" install -r requirements.txt pyinstaller
 fi
+"$VENV/bin/python" tools/collect_licenses.py
 "$VENV/bin/pyinstaller" flow-linux.spec --noconfirm --log-level WARN --distpath build/linux-dist --workpath build/linux-pyinstaller
 APPDIR="$PWD/build/Flow.AppDir"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib" installer build/tools

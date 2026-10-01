@@ -1,6 +1,6 @@
 # Windows code signing
 
-Flow releases through 1.5.11 are unsigned. The release workflow now requires signing configuration and stops when it is missing or verification fails. The existing downloads are unchanged; this preparation does not turn them into signed files.
+Flow's current Windows releases are unsigned. The owner has chosen to publish without a paid signing service. The workflow builds unsigned packages when no provider is configured and discloses this in release notes. Optional signing remains available: when a provider is configured, missing configuration or failed verification stops the release instead of falling back to unsigned files.
 
 The signed build signs `Flow.exe` and the console MCP companion `FlowMCP.exe` before packaging, then lets Inno Setup sign both the installer and its generated uninstaller. It checks for a trusted embedded Authenticode signature, code-signing usage and a timestamp. Release checksums are generated afterward. Third-party runtime files retain their original publishers. `windows-signatures.json` records the final app, companion and installer signatures and hashes in the Windows build artifact.
 
@@ -8,7 +8,7 @@ Signing identifies the publisher, but a new publisher can still receive SmartScr
 
 ## Finish account setup
 
-The owner must supply a verified signing identity. Neither a self-signed certificate nor the installer’s `AppPublisher` label establishes a trusted publisher. The private key, account credentials and identity documents must not be put in the repository or this document.
+To enable signing, the owner must supply a verified signing identity. Neither a self-signed certificate nor the installer’s `AppPublisher` label establishes a trusted publisher. The private key, account credentials and identity documents must not be put in the repository or this document.
 
 The prepared hosted workflow uses Azure Artifact Signing. Its Public Trust service supports individuals in the US and Canada; organizations have a wider supported country list. Confirm eligibility before purchasing anything. Identity validation requires the Azure portal and the owner's accurate legal and billing details. Use a **PublicTrust** certificate profile; test/private trust profiles do not establish consumer trust. [Account setup and eligibility](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart)
 
@@ -37,9 +37,9 @@ These are identifiers, not passwords. GitHub uses short-lived OIDC authenticatio
 
 For a local trusted certificate with its private key available in **CurrentUser/My**, set `FLOW_SIGNING_PROVIDER=certificate` and `FLOW_SIGN_CERT_SHA1` to its thumbprint, then run `./build.ps1 -Signed`. The Windows SDK's SignTool signs with SHA-256 and an RFC 3161 timestamp. Hardware/cloud key-provider certificates must be usable through that certificate's configured Windows provider. Do not export a non-exportable key or upload a private key to this repository.
 
-The hosted release workflow currently supports Azure. Using a local certificate in CI requires an appropriately managed signing runner or the certificate vendor's service integration. SignPath Foundation offers signing for approved open-source projects; acceptance is not automatic and its policy requires verifiable project reputation and manual approval of releases. Flow remains private until the owner approves publication. [SignPath conditions](https://signpath.org/terms.html)
+The hosted signed-release workflow currently supports Azure. Using a local certificate in CI requires an appropriately managed signing runner or the certificate vendor's service integration. SignPath Foundation offers signing for approved open-source projects; acceptance is not automatic and its policy requires verifiable project reputation and manual approval of releases. It is a possible future free option; Flow has not been accepted or signed by SignPath. [SignPath conditions](https://signpath.org/terms.html)
 
-An ordinary `./build.ps1` creates an explicitly unsigned development installer. It is not accepted by the release workflow. To verify signed outputs independently:
+An ordinary `./build.ps1` creates an unsigned installer. The release workflow accepts unsigned builds only when no signing provider is configured. To verify signed outputs independently:
 
 ```powershell
 ./tools/sign-windows.ps1 -Mode Verify -Path dist/Flow/Flow.exe,dist/Flow/FlowMCP.exe,installer/FlowSetup.exe -Report windows-signatures.json

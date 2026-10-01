@@ -6,13 +6,29 @@ from pathlib import Path
 from unittest.mock import patch
 
 import paths
-from mcp_server import FlowService, public, validate_settings
+from mcp_server import FlowService, public, validate_settings, bounded_audio
 from mcp_config import connection_config
 from memory import Memory
 from tools.check_mcp import check
 
 
 class MCP(unittest.TestCase):
+    def test_bounded_audio_matches_speech_decoder(self):
+        import numpy as np
+        from faster_whisper import decode_audio
+        fixture = paths.APP / "assets/speech-check/practice.wav"
+        np.testing.assert_array_equal(bounded_audio(fixture), decode_audio(str(fixture), sampling_rate=16000))
+
+    def test_bounded_audio_rejects_duration_and_empty_audio(self):
+        import wave
+        with tempfile.TemporaryDirectory() as folder:
+            for frames in (20000, 0):
+                file = Path(folder) / "fixture.wav"
+                with wave.open(str(file), "wb") as output:
+                    output.setnchannels(1); output.setsampwidth(2); output.setframerate(16000)
+                    output.writeframes(b"\x00\x00" * frames)
+                with self.assertRaises(ValueError): bounded_audio(file, seconds=1)
+
     def test_real_stdio_protocol_and_privacy(self):
         self.assertTrue(asyncio.run(check())["ok"])
 

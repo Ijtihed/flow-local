@@ -72,6 +72,36 @@ def validate_settings(patch):
     return patch
 
 
+def bounded_audio(file, seconds=900):
+    """Decode with a sample budget so compressed long audio cannot allocate without bound."""
+    import av
+    import numpy as np
+    chunks, count = [], 0
+    limit = seconds * 16000
+    with av.open(str(file)) as container:
+        if not container.streams.audio:
+            raise ValueError("The file contains no audio stream.")
+        stream = container.streams.audio[0]
+        if stream.duration is not None and stream.time_base is not None and stream.duration * stream.time_base > seconds:
+            raise ValueError(f"Audio must be no longer than {seconds} seconds.")
+        resampler = av.AudioResampler(format="s16", layout="mono", rate=16000)
+        def append(frames):
+            nonlocal count
+            for frame in frames:
+                samples = frame.to_ndarray().reshape(-1)
+                count += len(samples)
+                if count > limit:
+                    raise ValueError(f"Audio must be no longer than {seconds} seconds.")
+                chunks.append(samples)
+        for frame in container.decode(stream):
+            frame.pts = None
+            append(resampler.resample(frame))
+        append(resampler.resample(None))
+    if not count:
+        raise ValueError("The file contains no decoded audio.")
+    return np.concatenate(chunks).astype(np.float32) / 32768
+
+
 class FlowService:
     """Stable extension interface. Plugins receive this service and the MCP server."""
     def __init__(self, api=None, read_only=False):
@@ -388,13 +418,10 @@ def create_server(service=None, plugins=()):
         audio_path = Path(file).expanduser().resolve(strict=True)
         if not audio_path.is_file() or audio_path.suffix.casefold() not in {".wav", ".mp3", ".flac", ".m4a", ".ogg", ".webm"} or audio_path.stat().st_size > 50_000_000:
             raise ValueError("Choose a supported audio file of at most 50 MB.")
-        from faster_whisper import decode_audio
         from engine import Engine
         import setup_tasks
         settings = {**paths.load_settings(), "category": category}
-        audio = decode_audio(str(audio_path), sampling_rate=16000)
-        if len(audio) > 15 * 60 * 16000:
-            raise ValueError("Audio must be no longer than 15 minutes.")
+        audio = bounded_audio(audio_path)
         with service.lock, contextlib.redirect_stdout(sys.stderr):
             engine = Engine(service.api._memory())
             if settings.get("speech_provider", "local") == "local":

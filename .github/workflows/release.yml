@@ -33,7 +33,8 @@ jobs:
       - name: Validate release version
         shell: bash
         run: python tools/release_version.py --check
-      - name: Require verified Windows signing configuration
+      - name: Validate optional Windows signing configuration
+        if: vars.FLOW_SIGNING_PROVIDER != ''
         shell: pwsh
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -47,26 +48,32 @@ jobs:
             if (-not [Environment]::GetEnvironmentVariable($name)) { throw "Missing $name. Complete docs/WINDOWS_SIGNING.md before publishing." }
           }
       - name: Authenticate signing account
+        if: vars.FLOW_SIGNING_PROVIDER != ''
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: Install official signing module
+        if: vars.FLOW_SIGNING_PROVIDER != ''
         shell: pwsh
         run: Install-Module ArtifactSigning -RequiredVersion 0.1.20 -Scope CurrentUser -Repository PSGallery -Force
-      - name: Build signed Windows packages and check the runtime
+      - name: Build Windows packages and check the runtime
         shell: pwsh
         run: |
           python -m venv .venv
+          .\.venv\Scripts\python -m pip install --upgrade pip
           .\.venv\Scripts\pip install -r requirements.txt pyinstaller
-          .\build.ps1 -Signed
+          if ($env:FLOW_SIGNING_PROVIDER) { .\build.ps1 -Signed } else { .\build.ps1 }
           $flowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-headless','--test-report','windows-runtime.json' -WindowStyle Hidden -Wait -PassThru
           if ($flowTest.ExitCode -ne 0) { throw 'Packaged runtime failed' }
           $windowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-window','--test-report','windows-window.json' -WindowStyle Hidden -Wait -PassThru
           if ($windowTest.ExitCode -ne 0) { throw 'Packaged native window or tutorial failed' }
           .\.venv\Scripts\python tools/check_mcp.py --command "$PWD/dist/Flow/FlowMCP.exe" --args '[]' --report windows-mcp.json
           if ($LASTEXITCODE -ne 0) { throw 'Packaged MCP protocol check failed' }
+      - name: Check installed app, upgrade and uninstall
+        shell: pwsh
+        run: ./tools/check-install.ps1 -Report windows-install.json
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
@@ -76,6 +83,7 @@ jobs:
             *-runtime.json
             windows-window.json
             windows-mcp.json
+            windows-install.json
             windows-signatures.json
           if-no-files-found: error
           retention-days: 7
@@ -142,5 +150,10 @@ jobs:
             echo 'This version already has a release. Bump the version before publishing.' >&2
             exit 1
           fi
-          gh release create "$FLOW_TAG" release-files/FlowSetup.exe release-files/Flow-x86_64.AppImage release-files/SHA256SUMS.txt release-files/Flow-website.zip --target "$GITHUB_SHA" --title "Flow ${FLOW_TAG#v}" --generate-notes --draft
+          python - <<'PY'
+          from pathlib import Path
+          Path('release-notes.md').write_text('Download FlowSetup.exe for Windows or Flow-x86_64.AppImage for Linux. Choose your speech engine and model during setup.\n\nWindows downloads are unsigned unless this release includes a verified windows-signatures.json report; SmartScreen may show an unrecognized-app warning. SHA256SUMS.txt verifies file integrity.\n\nWebsite: https://ijtihed.github.io/flow-local/\nMCP setup: https://github.com/Ijtihed/flow-local/blob/main/docs/MCP.md\n', encoding='utf-8')
+          PY
+          gh release create "$FLOW_TAG" release-files/FlowSetup.exe release-files/Flow-x86_64.AppImage release-files/SHA256SUMS.txt release-files/Flow-website.zip --target "$GITHUB_SHA" --title "Flow ${FLOW_TAG#v}" --notes-file release-notes.md --draft
+          if [ -f release-files/windows-signatures.json ]; then gh release upload "$FLOW_TAG" release-files/windows-signatures.json; fi
           gh release edit "$FLOW_TAG" --draft=false --latest

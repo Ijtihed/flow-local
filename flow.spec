@@ -3,7 +3,7 @@
 # first-run setup downloads them, so the installer stays small and CPU-only machines don't carry 1.4 GB of CUDA.
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules, copy_metadata
 
-datas = [("ui.html", "."), ("assets", "assets")]
+datas = [("ui.html", "."), ("assets", "assets"), ("LICENSE", "."), ("build/THIRD_PARTY_NOTICES.txt", ".")]
 for pkg in ("faster_whisper", "wordfreq", "uiautomation", "webview"):
     datas += collect_data_files(pkg)
 datas += collect_data_files("mcp")
