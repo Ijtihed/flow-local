@@ -1,9 +1,9 @@
-# Security
+# Reporting a security issue
 
-Please report security issues privately through [GitHub security advisories](https://github.com/Ijtihed/flow-local/security/advisories/new), once private vulnerability reporting is enabled. Do not put credentials or personal recordings in public issues.
+Do not attach credentials, personal recordings or a complete user profile to public issues. When GitHub private vulnerability reporting is enabled for this repository, use the **Security → Report a vulnerability** form. If it is unavailable, contact the maintainer through a private channel before sharing exploit details.
 
-Flow stores recordings in memory during dictation. History, dictionary and model files stay in the user's data directory, outside the installation and repository. API speech sends audio to the provider only after explicit consent. Update requests send app version and download requests to GitHub; they do not include dictation history.
+Flow's MCP connection is local stdio, with typed tools and a read-only mode. There is no built-in remote MCP listener. A trusted MCP client still has access to the data and actions exposed by its connection; read-only access can read history, but cannot change settings, record audio, transcribe files or download components. Python extensions are opt-in and run with the user's account permissions.
 
-Updates use HTTPS and verify the GitHub release asset's SHA-256 digest and byte count before installation. Credentials go only to GitHub's API and are removed from requests to signed download storage URLs. The Windows installer is currently unsigned, so Windows may show a publisher warning. A checksum does not replace publisher code signing.
+API audio uploads require the user's saved consent. Credentials use account-bound DPAPI on Windows and user-only files on Linux. MCP reads exclude credentials. The loopback Linux settings server validates its session path, host, origin and method allowlist. Release packages require checksums; new Windows releases also require trusted timestamped signatures.
 
-Automatic installation waits for dictation and processing to finish, then reserves the recorder before handing off to the installer. Windows preserves user data and startup preferences; Linux keeps the previous AppImage as a backup.
+For routine speech problems, the in-app diagnostic report uses bundled test audio and excludes personal recordings, history and API keys. Review any attachment before sending it.

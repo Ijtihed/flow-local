@@ -26,6 +26,7 @@ function apiFixture(platform='windows', fresh=false) {
     install_update:async()=>{calls.push({action:'update'});Object.assign(updates,{phase:'downloading',progress:0});return true},
     save_update_access:async token=>{calls.push({action:'access',token});Object.assign(updates,{phase:'checking',message:''});return true},
     forget_update_access:async()=>true,publish_update:async()=>{calls.push({action:'publish'});return true},
+    copy_mcp_connection:async(format,read_only)=>{calls.push({action:'mcp_config',format,read_only});return true},
     diagnostics:async()=>clone(diagnostic),copy_speech_report:async()=>true,export_speech_report:async()=>"/fixture/Reports/check.json",
     settings:async()=>clone(S),memory:async()=>({terms:[],fixes:[],scanned:null}),stamp:async()=>1,history:async()=>clone(history),
     insights:async()=>({words:60,minutes_saved:1,wpm:150,apps:[['telegram',6],['firefox',6]],known:0,sessions:history.length,last_used:history[0]?.ts}),
@@ -129,6 +130,10 @@ async function ui(platform) {
   input(ctx,'s-trigger','my email');input(ctx,'s-text','alex@example.com');button(ctx,'Add shortcut').click();await ctx.clock.tickAsync(20);
   assert.deepEqual(f.S.snippets,[{trigger:'my email',text:'alex@example.com'}]);
   ctx.d.querySelector('[data-view="settings"]').click();
+  button(ctx,'Copy JSON config').click();await ctx.clock.tickAsync(20);
+  assert.deepEqual(f.calls.pop(),{action:'mcp_config',format:'json',read_only:false});
+  ctx.d.querySelector('#mcpReadOnly').checked=true;button(ctx,'Copy TOML config').click();await ctx.clock.tickAsync(20);
+  assert.deepEqual(f.calls.pop(),{action:'mcp_config',format:'toml',read_only:true});
   assert(ctx.d.querySelector('#settingsSpeech-model option[value="small"]').textContent.includes('recommended'));
   assert(!ctx.d.querySelector('#settingsSpeech-model option[value="large-v3"]').textContent.includes('recommended'));
   const auto=ctx.d.querySelector('[data-toggle="auto_update"]');

@@ -9,6 +9,7 @@ requests>=2.32
 huggingface_hub>=0.30
 wordfreq>=3.1
 rapidfuzz>=3.10
+mcp==2.2.0
 uiautomation>=2.0; sys_platform == "win32"
 unidecode>=1.3
 

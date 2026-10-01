@@ -14,6 +14,7 @@ METHODS = {"stamp", "history", "delete", "clear", "copy", "edit", "settings", "s
     "practice_open", "practice_start", "practice_stop", "practice_cancel", "practice_status", "practice_complete",
     "practice_focus", "practice_close"}
 METHODS.update({"diagnostics", "copy_speech_report", "export_speech_report"})
+METHODS.update({"mcp_connection", "copy_mcp_connection"})
 METHODS.update({"update_status", "check_updates", "install_update", "save_update_access", "forget_update_access", "publish_update"})
 
 

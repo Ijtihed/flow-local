@@ -3,7 +3,10 @@ import sys
 
 
 def run():
-    if "--self-test-window" in sys.argv:
+    if "--mcp" in sys.argv:
+        import mcp_server
+        mcp_server.main(sys.argv[sys.argv.index("--mcp") + 1:])
+    elif "--self-test-window" in sys.argv:
         import smoke
         smoke.run_window()
     elif "--self-test" in sys.argv or "--self-test-headless" in sys.argv:

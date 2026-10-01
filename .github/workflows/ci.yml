@@ -47,8 +47,11 @@ jobs:
           path: ~/.cache/huggingface/hub
           key: speech-small-v1
       - run: python tools/check_speech.py --model small --download --report speech-regression.json
+      - run: python tools/check_mcp_speech.py --model small --report mcp-speech-regression.json
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: speech-regression
-          path: speech-regression.json
+          path: |
+            speech-regression.json
+            mcp-speech-regression.json

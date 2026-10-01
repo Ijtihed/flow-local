@@ -44,7 +44,15 @@ def write_history(items):
 class Api:
     # ---- history
     def stamp(self):
-        return HISTORY.stat().st_mtime if HISTORY.exists() else 0
+        files = (HISTORY, paths.SETTINGS, MEMORY, Path(str(MEMORY) + "-wal"))
+        stamps = []
+        for file in files:
+            try:
+                stat = file.stat()
+                stamps.append(f"{stat.st_mtime_ns}/{stat.st_size}")
+            except OSError:
+                stamps.append("0")
+        return ":".join(stamps)
 
     def history(self):
         return read_history()[::-1]
@@ -169,6 +177,18 @@ class Api:
 
     def _set_startup(self, on):
         set_startup(on, paths.launch_command())
+
+    def mcp_connection(self, read_only=False):
+        from mcp_config import connection_config, codex_config
+        return {"json": connection_config(read_only), "toml": codex_config(read_only)}
+
+    def copy_mcp_connection(self, format="json", read_only=False):
+        if format not in {"json", "toml"}:
+            raise ValueError("Choose JSON or TOML.")
+        from system import copy_text
+        connection = self.mcp_connection(read_only)
+        copy_text(json.dumps(connection["json"], indent=2) if format == "json" else connection["toml"])
+        return True
 
     # ---- updates
     def _updates(self):

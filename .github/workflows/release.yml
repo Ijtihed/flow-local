@@ -65,6 +65,8 @@ jobs:
           if ($flowTest.ExitCode -ne 0) { throw 'Packaged runtime failed' }
           $windowTest = Start-Process -FilePath dist\Flow\Flow.exe -ArgumentList '--self-test-window','--test-report','windows-window.json' -WindowStyle Hidden -Wait -PassThru
           if ($windowTest.ExitCode -ne 0) { throw 'Packaged native window or tutorial failed' }
+          .\.venv\Scripts\python tools/check_mcp.py --command "$PWD/dist/Flow/FlowMCP.exe" --args '[]' --report windows-mcp.json
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged MCP protocol check failed' }
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
@@ -73,6 +75,7 @@ jobs:
             installer/FlowSetup.exe
             *-runtime.json
             windows-window.json
+            windows-mcp.json
             windows-signatures.json
           if-no-files-found: error
           retention-days: 7
@@ -91,6 +94,7 @@ jobs:
         run: |
           bash build-linux.sh
           installer/Flow-x86_64.AppImage --appimage-extract-and-run --self-test-headless --test-report linux-runtime.json
+          .venv-linux/bin/python tools/check_mcp.py --command "$PWD/installer/Flow-x86_64.AppImage" --args '["--appimage-extract-and-run", "--mcp"]' --report linux-mcp.json
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
@@ -99,6 +103,7 @@ jobs:
             installer/Flow-x86_64.AppImage
             installer/Flow-x86_64.AppImage.sha256
             linux-runtime.json
+            linux-mcp.json
           if-no-files-found: error
           retention-days: 7
   publish:

@@ -65,6 +65,7 @@ def launch_command(*args):
     if sys.platform.startswith("linux") and os.environ.get("APPIMAGE"):
         return [os.environ["APPIMAGE"], *args]
     if FROZEN:
-        return [sys.executable, *args]
+        executable = str(Path(sys.executable).with_name("Flow.exe")) if sys.platform == "win32" and Path(sys.executable).stem.casefold() == "flowmcp" else sys.executable
+        return [executable, *args]
     pyw = Path(sys.executable).with_name("pythonw.exe")
     return [str(pyw if pyw.exists() else sys.executable), str(APP / "main.py"), *args]

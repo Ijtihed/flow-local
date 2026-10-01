@@ -2,6 +2,12 @@
 
 Free voice dictation for Windows and Linux. Hold a key, talk, let go, and your words are typed wherever your cursor is. Choose on-device speech or an optional transcription API. Your vocabulary and history stay on your device.
 
+![Flow dictating in Linear, Gmail and ChatGPT](docs/media/dictation.gif)
+
+![A first dictation fills the empty practice text box](docs/media/first-dictation.gif)
+
+Product previews use example text and demo data.
+
 ## Download
 
 [Download FlowSetup.exe](https://github.com/Ijtihed/flow-local/releases/latest/download/FlowSetup.exe) (Windows 10 and 11, no admin needed)
@@ -54,6 +60,7 @@ The AppImage was built and smoke-tested in Ubuntu 22.04 under WSL, including the
 ## What it does
 
 - **Your engine choice.** Run Whisper locally, or use an API with your own key. Cleanup stays local.
+- **MCP access.** Connect an assistant to configure Flow, add vocabulary and spoken shortcuts, manage history and models, and use speech tools. Copy a connection config from Settings. [Connection guide and extension examples](docs/MCP.md).
 - **Learns you.** Names, jargon and project names get spelled right. It reads your Obsidian vault (optional) and learns from every word you fix.
 - **65 familiar app logos.** Writing and notes, email, chats, AI tools, code editors and browsers share one bundled app catalog. Desktop process names and branded browser-tab titles identify the app for history and writing style. The website automatically cycles through Linear, Gmail and ChatGPT. These are illustrative previews, not endorsements or provider integrations. Dictation works in other apps too, wherever the OS can paste text.
 - **Matches the app.** Casual in Discord, formal in email, your own style everywhere. Texting shortcuts like idk and tbh in chats if you want them.
@@ -88,6 +95,8 @@ python -m venv .venv
 ```
 
 To build the installer yourself: install [Inno Setup](https://jrsoftware.org/isinfo.php), then run `.\build.ps1`.
+
+Contributions and integrations are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), [security notes](SECURITY.md), and the [publication checklist](docs/PUBLISHING.md).
 
 On Linux:
 

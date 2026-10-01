@@ -2,7 +2,7 @@
 
 Flow releases through 1.5.11 are unsigned. The release workflow now requires signing configuration and stops when it is missing or verification fails. The existing downloads are unchanged; this preparation does not turn them into signed files.
 
-The signed build signs `Flow.exe` before packaging, then lets Inno Setup sign both the installer and its generated uninstaller. It checks for a trusted embedded Authenticode signature, code-signing usage and a timestamp. Release checksums are generated afterward. Third-party runtime files retain their original publishers. `windows-signatures.json` records the final app and installer signatures and hashes in the Windows build artifact.
+The signed build signs `Flow.exe` and the console MCP companion `FlowMCP.exe` before packaging, then lets Inno Setup sign both the installer and its generated uninstaller. It checks for a trusted embedded Authenticode signature, code-signing usage and a timestamp. Release checksums are generated afterward. Third-party runtime files retain their original publishers. `windows-signatures.json` records the final app, companion and installer signatures and hashes in the Windows build artifact.
 
 Signing identifies the publisher, but a new publisher can still receive SmartScreen warnings while reputation builds. Microsoft Store MSIX distribution is the most reliable route for avoiding the download warning. [Microsoft's SmartScreen guidance](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation)
 
@@ -42,7 +42,7 @@ The hosted release workflow currently supports Azure. Using a local certificate 
 An ordinary `./build.ps1` creates an explicitly unsigned development installer. It is not accepted by the release workflow. To verify signed outputs independently:
 
 ```powershell
-./tools/sign-windows.ps1 -Mode Verify -Path dist/Flow/Flow.exe,installer/FlowSetup.exe -Report windows-signatures.json
+./tools/sign-windows.ps1 -Mode Verify -Path dist/Flow/Flow.exe,dist/Flow/FlowMCP.exe,installer/FlowSetup.exe -Report windows-signatures.json
 ```
 
 Inno Setup invokes the same signer for its temporary uninstall executable during compilation. [Inno signing](https://jrsoftware.org/ishelp/topic_setup_signtool.htm)

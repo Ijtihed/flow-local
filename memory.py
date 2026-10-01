@@ -70,6 +70,7 @@ class Memory:
         self.db.commit()
         self.languages = list(languages) or ["en"]
         self._cache = None
+        self._data_version = None
 
     # ------------------------------------------------------------ basics
 
@@ -98,6 +99,10 @@ class Memory:
     def terms(self):
         """[(text, source, weight, key)] cached until the table changes."""
         with self.lock:
+            data_version = self.db.execute("PRAGMA data_version").fetchone()[0]
+            if data_version != self._data_version:
+                self._cache = None
+                self._data_version = data_version
             if self._cache is None:
                 rows = self.db.execute("SELECT text, source, uses FROM terms WHERE hidden=0").fetchall()
                 self._cache = [(t, s, WEIGHT.get(s, 1.0) + min(1.0, math.log1p(u) / 3), sound_key(t)) for t, s, u in rows]

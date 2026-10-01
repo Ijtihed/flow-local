@@ -557,6 +557,12 @@ function renderSettings() {
     <div class="row"><div class="l"><b>Automatic updates</b><small>Download and install when Flow is idle. Your data stays here.</small></div><button class="switch ${S.auto_update !== false ? 'on' : ''}" data-toggle="auto_update" aria-label="Automatic updates"></button></div>
     <details class="update-access" id="updateAccess"><summary>GitHub access</summary><p>For private releases, connect your own GitHub token with Contents read access to Flow. An existing GitHub CLI sign-in also works.</p><div class="adder"><input class="field" id="updateToken" type="password" autocomplete="off" placeholder="GitHub access token" aria-label="GitHub access token"><button class="btn ghost" id="connectUpdates">Connect</button><button class="link" id="forgetUpdates">Forget token</button></div></details>
     <div id="publishUpdates" hidden><button class="link" id="publishUpdate">Publish update on GitHub</button><p class="note">Build and publish a new version with the Publish update workflow.</p></div>
+    ${section("Connect your assistant")}
+    <details class="update-access" id="mcpConnection"><summary>MCP connection</summary>
+      <p>Let your assistant configure Flow, teach words and add spoken shortcuts. Connected clients can read your history and use recording tools.</p>
+      <label class="consent"><input type="checkbox" id="mcpReadOnly">Read-only access</label>
+      <div class="report-actions"><button class="btn ghost" id="copyMcpJson">Copy JSON config</button><button class="btn ghost" id="copyMcpToml">Copy TOML config</button></div>
+      <p class="note">Add JSON to a client that uses mcpServers, or TOML to a client that uses mcp_servers. Restart the client to connect.</p><p class="form-error" id="mcpError" role="alert" hidden></p></details>
     ${section("General")}
     <div class="row"><div class="l"><b>A quick tour</b><small>Say a sentence and watch it become text.</small></div><button class="btn ghost" id="replayTour">Show me</button></div>
     <div class="row"><div class="l"><b>Open at sign-in</b><small>Flow waits in the tray, ready when you are.</small></div><button class="switch ${S.startup ? "on" : ""}" data-toggle="startup"></button></div>
@@ -568,6 +574,10 @@ function renderSettings() {
   $("#saveEngine").onclick = async e => { const b = e.currentTarget; b.disabled = true; b.textContent = "Preparing…"; $("#settingsSpeech").inert = true; if (await applySpeech("settingsSpeech", config)) { S = await api().settings(); render(); toast("Speech engine saved"); } else { $("#settingsSpeech").inert = false; b.disabled = false; b.textContent = "Use this engine"; } };
   if ($("#forgetKey")) $("#forgetKey").onclick = async () => { await api().forget_api_key(); S = await api().settings(); render(); toast("Key removed. Choose a local model to continue."); };
   $("#replayTour").onclick = showTutorial;
+  for (const [id, format] of [["copyMcpJson", "json"], ["copyMcpToml", "toml"]]) $("#" + id).onclick = async () => {
+    try { await api().copy_mcp_connection(format, $("#mcpReadOnly").checked); $("#mcpError").hidden = true; toast("Connection config copied"); }
+    catch (error) { $("#mcpError").textContent = error.message || String(error); $("#mcpError").hidden = false; }
+  };
   bindUpdates();
   $("#s-shortcut").onchange = (e) => save({ shortcut: e.target.value });
   document.querySelectorAll("[data-seg]").forEach((g) => g.querySelectorAll("button").forEach((b) => b.onclick = () => {
@@ -831,8 +841,11 @@ function render() {
 async function refresh(force) {
   const s = await api().stamp();
   if (!force && s === stamp) return;
+  const active = document.activeElement;
+  if (!force && $("#view").contains(active) && (active.isContentEditable || active.matches("input,textarea,select"))) return;
   stamp = s; items = await api().history(); I = await api().insights();
-  if (view === "home" || force) render();
+  if (!force) { S = await api().settings(); M = await api().memory(); }
+  render();
 }
 document.querySelectorAll(".nav").forEach((b) => b.onclick = () => {
   document.querySelectorAll(".nav").forEach((x) => x.classList.toggle("on", x === b));
