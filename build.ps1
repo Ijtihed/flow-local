@@ -3,6 +3,8 @@
 param([switch]$Signed)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
+.\.venv\Scripts\python tools\release_version.py --check
+if ($LASTEXITCODE -ne 0) { throw "Application and installer versions differ" }
 if ($Signed) {
     Import-Module (Join-Path $PSScriptRoot 'tools\signing.psm1') -Force
     Assert-FlowSigningConfiguration
