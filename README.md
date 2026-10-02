@@ -72,6 +72,6 @@ On Linux: install the [system dependencies](docs/PLATFORMS.md#source-install), t
 
 ## Credits
 
-Made by [Ijtihed](https://github.com/Ijtihed). Speech uses [faster-whisper](https://github.com/SYSTRAN/faster-whisper); optional local cleanup uses [Ollama](https://ollama.com). Bundled fonts include their licenses. App logos belong to their publishers; [sources and attribution](assets/logos/SOURCES.txt).
+Made by [Ijtihed](https://github.com/Ijtihed). Speech uses [faster-whisper](https://github.com/SYSTRAN/faster-whisper); optional local cleanup uses [Ollama](https://ollama.com). Bundled fonts use the SIL Open Font License: [Inter](assets/LICENSE-Inter.txt), [IBM Plex Sans](assets/LICENSE-PlexSans.txt), and [Instrument Serif](assets/LICENSE-InstrumentSerif.txt). App logos belong to their publishers; [sources and attribution](assets/logos/SOURCES.txt).
 
 [MIT license](LICENSE).
